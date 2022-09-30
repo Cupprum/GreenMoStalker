@@ -1,0 +1,13 @@
+{
+  "name": "greenmo",
+  "type": "module",
+  "exports": "./app.js",
+  "dependencies": {
+    "typescript": "^4.8.3",
+    "node-fetch": "3.2.10"
+  },
+  "devDependencies": {
+    "@tsconfig/esm": "^1.0.2",
+    "@types/node": "^18.7.18"
+  }
+}

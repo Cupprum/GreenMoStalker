@@ -1,0 +1,11 @@
+{
+  "extends": "@tsconfig/esm/tsconfig.json",
+  "compilerOptions": {
+    "target": "es6",
+    "moduleResolution": "node",
+    "outDir": "./dist"
+  },
+  "files": [
+    "./src/app.ts"
+  ]
+}
