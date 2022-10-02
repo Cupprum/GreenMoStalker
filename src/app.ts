@@ -1,5 +1,5 @@
 import fetch, { Response } from 'node-fetch';
-
+import * as functions from '@google-cloud/functions-framework';
 
 type Car = {
     carId: number;
@@ -171,8 +171,10 @@ function getPositions() {
     return positions;
 }
 
-async function handler(location: string) {
+functions.cloudEvent('myCloudEventFunction', async cloudEvent => {
     // TODO: improve exception handling
+    
+    const location: string = "DTU"; // TODO: get it from cloudEvent, Access the CloudEvent data payload via cloudEvent.data
     const positions: Map<string, Area> = getPositions();
 
     const carPossitions: Array<Position> = await executeGreenMoRequest(positions.get(location)) as Array<Position>;
@@ -181,6 +183,4 @@ async function handler(location: string) {
 
         await executePushoverRequest(img);
     }
-}
-
-handler("DTU");
+});
