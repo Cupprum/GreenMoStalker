@@ -1,5 +1,9 @@
 import fetch, { Response } from 'node-fetch';
+import { FormData } from "formdata-node"
+import { FormDataEncoder } from 'form-data-encoder';
+import { Readable } from 'stream';
 import * as functions from '@google-cloud/functions-framework';
+
 
 type Car = {
     carId: number;
@@ -30,14 +34,14 @@ type Area = {
     pos2: Position;
 };
 
-function generateGreenMoParameters(area: Area) {
+function generateGreenMoParameters(area: Area): string {
     const pos1: string = `lon1=${area.pos1.lon}&lat1=${area.pos1.lat}`;
     const pos2: string = `lon2=${area.pos2.lon}&lat2=${area.pos2.lat}`;
     
     return `${pos1}&${pos2}`;
 }
 
-async function executeGreenMoRequest(area: Area) {
+async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
     const protocol: string = "https";
     const url: string = "greenmobility.frontend.fleetbird.eu";
     const endpoint: string = "api/prod/v1.06/map/cars";
@@ -62,7 +66,7 @@ async function executeGreenMoRequest(area: Area) {
     );
 }
 
-function generateMapsParameters(positions: Array<Position>) {
+function generateMapsParameters(positions: Array<Position>): string {
     const centerPos: Position = {
         lat: 55.787867,
         lon: 12.521667
@@ -83,7 +87,7 @@ function generateMapsParameters(positions: Array<Position>) {
 }
 
 
-async function executeMapsRequest(positions: Array<Position>) {
+async function executeMapsRequest(positions: Array<Position>): Promise<Blob> {
     const protocol: string = "https";
     const url: string = "maps.googleapis.com";
     const endpoint: string = "maps/api/staticmap";
@@ -102,7 +106,7 @@ async function executeMapsRequest(positions: Array<Position>) {
     return response.blob();
 }
 
-function generatePushoverBody(msg: string, img?: Blob) {
+function generatePushoverBody(msg: string, img?: Blob): FormDataEncoder {
     let formdata = new FormData();
 
     formdata.append("token", process.env.PUSHOVER_API_TOKEN ?? "");
@@ -113,24 +117,24 @@ function generatePushoverBody(msg: string, img?: Blob) {
         formdata.append("attachment", img, "image.png");
     }
 
-    return formdata;
+    return new FormDataEncoder(formdata);
 }
 
 async function executePushoverRequest(img: Blob) {
     const protocol: string = "https";
     const url: string = "api.pushover.net";
     const endpoint: string = "1/messages.json";
-    const body: FormData = generatePushoverBody("Found some cars for charging.", img);
+    const encoder: FormDataEncoder = generatePushoverBody("Found some cars for charging.", img);
 
     const fqdn: string = `${protocol}://${url}/${endpoint}`;
 
     let requestOptions = {
       method: 'POST',
-      body: body
+      headers: encoder.headers,
+      body: Readable.from(encoder)
     };
     
     const response: Response = await fetch(fqdn, requestOptions);
-    
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
         await exceptionPushoverRequest("Pushover notification failed");
@@ -142,19 +146,20 @@ async function exceptionPushoverRequest(msg: string) {
     const protocol: string = "https";
     const url: string = "api.pushover.net";
     const endpoint: string = "1/messages.json";
-    const body: FormData = generatePushoverBody(msg);
-
+    const encoder: FormDataEncoder = generatePushoverBody(msg);
+    
     const fqdn: string = `${protocol}://${url}/${endpoint}`;
 
     let requestOptions = {
       method: 'POST',
-      body: body
+      headers: encoder.headers,
+      body: Readable.from(encoder)
     };
     
     await fetch(fqdn, requestOptions);
 }
 
-function getPositions() {
+function getPositions(): Map<string, Area> {
     let positions = new Map<string, Area>();
 
     positions.set("DTU", {
@@ -171,9 +176,7 @@ function getPositions() {
     return positions;
 }
 
-functions.cloudEvent('myCloudEventFunction', async cloudEvent => {
-    // TODO: improve exception handling
-    
+functions.http('GreenMoNotifier', async (req, res) => {
     const location: string = "DTU"; // TODO: get it from cloudEvent, Access the CloudEvent data payload via cloudEvent.data
     const positions: Map<string, Area> = getPositions();
 
@@ -183,4 +186,5 @@ functions.cloudEvent('myCloudEventFunction', async cloudEvent => {
 
         await executePushoverRequest(img);
     }
+    res.send('Success');
 });
