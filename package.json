@@ -11,5 +11,8 @@
     "@tsconfig/esm": "1.0.2",
     "@types/node": "18.7.18",
     "typescript": "4.8.4"
+  },
+  "scripts": {
+    "build": "tsc && cp package.json dist && (cd dist; zip -r ../function-source.zip .)"
   }
 }

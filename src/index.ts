@@ -37,7 +37,7 @@ type Area = {
 function generateGreenMoParameters(area: Area): string {
     const pos1: string = `lon1=${area.pos1.lon}&lat1=${area.pos1.lat}`;
     const pos2: string = `lon2=${area.pos2.lon}&lat2=${area.pos2.lat}`;
-    
+
     return `${pos1}&${pos2}`;
 }
 
@@ -60,8 +60,8 @@ async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
     const result: Array<Car> = (await response.json()) as Array<Car>;
 
     return result.filter(
-        function(car: Car, _) {
-            return car.fuelLevel < 30;
+        function (car: Car, _) {
+            return car.fuelLevel < 90;
         }
     );
 }
@@ -72,9 +72,9 @@ function generateMapsParameters(positions: Array<Position>): string {
         lon: 12.521667
     };
     const center: string = `center=${centerPos.lat},${centerPos.lon}`;
-    
+
     const size: string = "size=500x400";
-    
+
     const key: string = `key=${process.env.GOOGLE_MAPS_API_TOKEN ?? ''}`;
     const zoom: string = "zoom=14";
     const maptype: string = "maptype=satellite";
@@ -129,11 +129,11 @@ async function executePushoverRequest(img: Blob) {
     const fqdn: string = `${protocol}://${url}/${endpoint}`;
 
     let requestOptions = {
-      method: 'POST',
-      headers: encoder.headers,
-      body: Readable.from(encoder)
+        method: 'POST',
+        headers: encoder.headers,
+        body: Readable.from(encoder)
     };
-    
+
     const response: Response = await fetch(fqdn, requestOptions);
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
@@ -147,15 +147,15 @@ async function exceptionPushoverRequest(msg: string) {
     const url: string = "api.pushover.net";
     const endpoint: string = "1/messages.json";
     const encoder: FormDataEncoder = generatePushoverBody(msg);
-    
+
     const fqdn: string = `${protocol}://${url}/${endpoint}`;
 
     let requestOptions = {
-      method: 'POST',
-      headers: encoder.headers,
-      body: Readable.from(encoder)
+        method: 'POST',
+        headers: encoder.headers,
+        body: Readable.from(encoder)
     };
-    
+
     await fetch(fqdn, requestOptions);
 }
 
@@ -171,7 +171,7 @@ function getPositions(): Map<string, Area> {
             lat: 55.779566,
             lon: 12.527933
         }
-    });  
+    });
 
     return positions;
 }
