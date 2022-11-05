@@ -25,10 +25,16 @@ resource "google_storage_bucket" "bucket" {
   uniform_bucket_level_access = true
 }
 
+data "archive_file" "function-source" {
+  type        = "zip"
+  source_dir  = "../dist"
+  output_path = "../function-source.zip"
+}
+
 resource "google_storage_bucket_object" "object" {
-  name   = "function-source.zip"
+  name   = "function-source.${data.archive_file.function-source.output_md5}.zip"
   bucket = google_storage_bucket.bucket.name
-  source = "../function-source.zip"
+  source = data.archive_file.function-source.output_path
 }
 
 resource "google_cloudfunctions2_function" "function" {

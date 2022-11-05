@@ -7,5 +7,7 @@ creds.json
 # Terraform
 *.tfstate
 *.tfstate.backup
+*.tfstate.lock.info
 .terraform
 .terraform.lock.hcl
+*.zip

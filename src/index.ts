@@ -3,6 +3,7 @@ import { FormData } from "formdata-node"
 import { FormDataEncoder } from 'form-data-encoder';
 import { Readable } from 'stream';
 import * as functions from '@google-cloud/functions-framework';
+import express from 'express';
 
 
 type Car = {
@@ -173,14 +174,45 @@ function getPositions(): Map<string, Area> {
         }
     });
 
+    positions.set("Lundto", {
+        pos1: {
+            lat: 55.794551,
+            lon: 12.520745
+        },
+        pos2: {
+            lat: 55.792620,
+            lon: 12.529628
+        }
+    });
+
+    positions.set("Bagsvaerd", {
+        pos1: {
+            lat: 55.759287,
+            lon: 12.451061
+        },
+        pos2: {
+            lat: 55.753806,
+            lon: 12.458088
+        }
+    });
+
     return positions;
 }
 
-functions.http('GreenMoNotifier', async (req, res) => {
-    const location: string = "DTU"; // TODO: get it from cloudEvent, Access the CloudEvent data payload via cloudEvent.data
+functions.http('GreenMoNotifier', async (req: express.Request, res: express.Response) => {
+    const location = req.body.location;
+    if (location == undefined) {
+        res.status(400).send('Missing "location" parameter.');
+    }
+
     const positions: Map<string, Area> = getPositions();
 
-    const carPossitions: Array<Position> = await executeGreenMoRequest(positions.get(location)) as Array<Position>;
+    const area = positions.get(location);
+    if (area == undefined) {
+        res.status(400).send('Parameter "location" should be from dict of positions.');
+    }
+
+    const carPossitions: Array<Position> = await executeGreenMoRequest(area) as Array<Position>;
     if (carPossitions.length) {
         const img: Blob = await executeMapsRequest(carPossitions);
 
