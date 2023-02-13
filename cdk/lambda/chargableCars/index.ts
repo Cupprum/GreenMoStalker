@@ -1,9 +1,9 @@
 import { Context, APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda';
+import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import fetch, { Response } from 'node-fetch';
 import { FormData } from "formdata-node"
 import { FormDataEncoder } from 'form-data-encoder';
 import { Readable } from 'stream';
-import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm"; // ES Modules import
 
 const ssm = new SSMClient({});
 
