@@ -1,18 +1,9 @@
 {
-  "name": "testfunction",
-  "type": "module",
   "dependencies": {
-    "@google-cloud/functions-framework": "3.0.0",
-    "form-data-encoder": "^2.1.3",
-    "formdata-node": "^5.0.0",
-    "node-fetch": "3.2.10"
+    "aws-cdk-lib": "^2.64.0",
+    "typescript": "^4.9.5"
   },
   "devDependencies": {
-    "@tsconfig/esm": "1.0.2",
-    "@types/node": "18.7.18",
-    "typescript": "4.8.4"
-  },
-  "scripts": {
-    "deploy": "tsc && cp package.json dist && (cd terraform; terraform apply) && rm *.zip"
+    "@types/node": "^18.13.0"
   }
 }
