@@ -10,7 +10,9 @@
         "node-fetch": "^3.3.0"
     },
     "devDependencies": {
-        "@types/node": "^18.13.0",
+        "@types/aws-lambda": "^8.10.111",
+        "@types/node": "^18.15.0",
+        "aws-lambda": "1.0.7",
         "typescript": "4.9.5"
     },
     "scripts": {

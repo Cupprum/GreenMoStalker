@@ -1,54 +1,28 @@
 import * as cdk from 'aws-cdk-lib';
-import * as events from 'aws-cdk-lib/aws-events';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
+import * as apigw from 'aws-cdk-lib/aws-apigatewayv2';
 import { Construct } from 'constructs';
+import { SecretValue } from 'aws-cdk-lib';
+import { ParameterTier } from 'aws-cdk-lib/aws-ssm';
 var cp = require('child_process');
 
 export class GreenMobility extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
 
-		const chargableCarsName = 'chargableCars'
-		const chargableCarsCodePath = path.join(__dirname, '..', 'lambda', chargableCarsName);
-		const chargableCarsCode = this.packageLambdaCode(chargableCarsCodePath);
+		const greenmoApi = new GreenmoApi(this);
+		
+		const chargableCarsLambda = this.chargableCarsLambda();
 
-		const chargableCarsLambda = new lambda.Function(this, `${chargableCarsName}Lambda`, {
-			functionName: `${chargableCarsName}Lambda`,
-			code: chargableCarsCode,
-			handler: 'index.handler',
-			runtime: lambda.Runtime.NODEJS_18_X,
-			timeout: cdk.Duration.seconds(15),
-		});
+		greenmoApi.addRoute(chargableCarsLambda.functionArn, 'GET', '/cars');
 
-		chargableCarsLambda.addToRolePolicy(
-			new iam.PolicyStatement({
-				actions: ['ssm:GetParameter'],
-				resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/greenmo/*`],
-			})
-		);
-
-		const mapsApiToken = new ssm.StringParameter(this, 'mapsApiToken', {
-			parameterName: '/greenmo/mapsApiToken',
-			stringValue: process.env.GOOGLE_MAPS_API_TOKEN ?? '',
+		new cdk.CfnOutput(this, 'ApiArn', {
+			exportName: 'api-url',
+			value: greenmoApi.attrApiEndpoint,
 		});
-		const pushoverApiToken = new ssm.StringParameter(this, 'pushoverApiToken', {
-			parameterName: '/greenmo/pushoverApiToken',
-			stringValue: process.env.PUSHOVER_API_TOKEN ?? '',
-		});
-		const pushoverApiUser = new ssm.StringParameter(this, 'pushoverApiUser', {
-			parameterName: '/greenmo/pushoverApiUser',
-			stringValue: process.env.PUSHOVER_API_USER ?? '',
-		});
-
-		// const chargableCarsCronJobLundto = new events.Rule(this, `${chargableCarsName}CronJobLundto`, {
-		// 	ruleName: `${chargableCarsName}CronJobLundto`,
-		// 	schedule: events.Schedule.cron({}),
-		// });
-		// chargableCarsCronJobLundto.addTarget(new targets.LambdaFunction(chargableCarsLambda));
 	}
 
 	private packageLambdaCode(path: string): lambda.AssetCode {
@@ -73,6 +47,83 @@ export class GreenMobility extends cdk.Stack {
 					},
 				},
 			}
+		});
+	}
+
+	private chargableCarsLambda(): lambda.Function {
+		// Package the code
+		const codePath = path.join(__dirname, '..', 'lambda', 'chargableCars');
+		const code = this.packageLambdaCode(codePath);
+
+		const func = new lambda.Function(this, 'chargableCarsLambda', {
+			functionName: 'chargableCarsLambda',
+			code: code,
+			handler: 'index.handler',
+			runtime: lambda.Runtime.NODEJS_18_X,
+			timeout: cdk.Duration.seconds(15),
+		});
+
+		// Allow accessing specific SSM Parameters
+		func.addToRolePolicy(
+			new iam.PolicyStatement({
+				actions: ['ssm:GetParameter'],
+				resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/greenmo/*`],
+			})
+		);
+
+		// Allow invocation from apigateway
+		func.addPermission('ApiGatewayInvokePermission', {
+			principal: new cdk.aws_iam.ServicePrincipal('apigateway.amazonaws.com'),
+			action: 'lambda:InvokeFunction',
+		});
+
+		// Define required parameters
+		new ssm.StringParameter(this, 'mapsApiToken', {
+			parameterName: '/greenmo/mapsApiToken',
+			stringValue: process.env.GOOGLE_MAPS_API_TOKEN ?? '',
+		});
+		new ssm.StringParameter(this, 'pushoverApiToken', {
+			parameterName: '/greenmo/pushoverApiToken',
+			stringValue: process.env.PUSHOVER_API_TOKEN ?? '',
+		});
+		new ssm.StringParameter(this, 'pushoverApiUser', {
+			parameterName: '/greenmo/pushoverApiUser',
+			stringValue: process.env.PUSHOVER_API_USER ?? '',
+		});
+
+		return func;
+	}
+}
+
+class GreenmoApi extends apigw.CfnApi {
+	constructor(scope: Construct) {
+		super(scope,'greenmoApi', {
+			name: 'greenmoApi',
+			protocolType: 'HTTP',
+		});
+
+		// Default stage in AWS is called $default.
+		// Default setting is manual deployment.
+		new apigw.CfnStage(scope, 'greenmoApiDefaultStage', {
+			apiId: this.ref,
+			stageName: '$default',
+			autoDeploy: true,
+		});
+	}
+
+	// Wrapper function to  create integrations easier.
+	public addRoute(functionArn: string, method: string, route: string) {
+		const integration new apigw.CfnIntegration(this, 'integration', {
+			apiId: this.ref,
+			integrationType: 'AWS_PROXY',
+			integrationUri: functionArn,
+			payloadFormatVersion: '2.0',
+		});
+
+		new apigw.CfnRoute(this, 'MyRoute', {
+			apiId: this.ref,
+			routeKey: `${method} ${route}`,
+			target: `integrations/${integration.ref}`,
 		});
 	}
 }
