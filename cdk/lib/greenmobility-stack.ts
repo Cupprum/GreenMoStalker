@@ -3,26 +3,20 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
-import * as apigw from 'aws-cdk-lib/aws-apigatewayv2';
+import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
-import { SecretValue } from 'aws-cdk-lib';
-import { ParameterTier } from 'aws-cdk-lib/aws-ssm';
 var cp = require('child_process');
+
 
 export class GreenMobility extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
 
-		const greenmoApi = new GreenmoApi(this);
-		
+		const greenmoApi = new GreenMoApi(this);
+
 		const chargableCarsLambda = this.chargableCarsLambda();
 
-		greenmoApi.addRoute(chargableCarsLambda.functionArn, 'GET', '/cars');
-
-		new cdk.CfnOutput(this, 'ApiArn', {
-			exportName: 'api-url',
-			value: greenmoApi.attrApiEndpoint,
-		});
+		greenmoApi.addLambda(chargableCarsLambda, 'GET', 'cars');
 	}
 
 	private packageLambdaCode(path: string): lambda.AssetCode {
@@ -95,35 +89,24 @@ export class GreenMobility extends cdk.Stack {
 	}
 }
 
-class GreenmoApi extends apigw.CfnApi {
+class GreenMoApi extends apigw.RestApi {
 	constructor(scope: Construct) {
-		super(scope,'greenmoApi', {
-			name: 'greenmoApi',
-			protocolType: 'HTTP',
+		super(scope, 'greenMoApi', {
+			restApiName: 'greenmoApi',
+			apiKeySourceType: apigw.ApiKeySourceType.HEADER,
 		});
 
-		// Default stage in AWS is called $default.
-		// Default setting is manual deployment.
-		new apigw.CfnStage(scope, 'greenmoApiDefaultStage', {
-			apiId: this.ref,
-			stageName: '$default',
-			autoDeploy: true,
+		this.addApiKey('apiKey', {
+			value: 'ultratopsecretkeywhichofcourseiamgoingtouseinprod',
 		});
 	}
 
-	// Wrapper function to  create integrations easier.
-	public addRoute(functionArn: string, method: string, route: string) {
-		const integration new apigw.CfnIntegration(this, 'integration', {
-			apiId: this.ref,
-			integrationType: 'AWS_PROXY',
-			integrationUri: functionArn,
-			payloadFormatVersion: '2.0',
-		});
+	public addLambda(func: lambda.Function, method: string, path: string) {
+		const integration = new apigw.LambdaIntegration(func);
 
-		new apigw.CfnRoute(this, 'MyRoute', {
-			apiId: this.ref,
-			routeKey: `${method} ${route}`,
-			target: `integrations/${integration.ref}`,
+		const route = this.root.addResource(path);
+		route.addMethod(method, integration, {
+			apiKeyRequired: true,
 		});
 	}
 }
