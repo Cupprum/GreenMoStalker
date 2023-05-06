@@ -97,7 +97,7 @@ class GreenMoApi extends apigw.RestApi {
 		});
 
 		const apiKey = this.addApiKey('apiKey', {
-			value: 'ultratopsecretkeywhichofcourseiamgoingtouseinprod',
+			value: process.env.GREENMO_API_KEY ?? '',
 		});
 
 		const usagePlan = this.addUsagePlan('usagePlan');
