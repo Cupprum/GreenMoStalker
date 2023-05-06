@@ -45,7 +45,7 @@ export class GreenMobility extends cdk.Stack {
 	}
 
 	private chargableCarsLambda(): lambda.Function {
-		// Package the code
+		// Package the code.
 		const codePath = path.join(__dirname, '..', 'lambda', 'chargableCars');
 		const code = this.packageLambdaCode(codePath);
 
@@ -57,7 +57,7 @@ export class GreenMobility extends cdk.Stack {
 			timeout: cdk.Duration.seconds(15),
 		});
 
-		// Allow accessing specific SSM Parameters
+		// Allow accessing specific SSM Parameters.
 		func.addToRolePolicy(
 			new iam.PolicyStatement({
 				actions: ['ssm:GetParameter'],
@@ -65,13 +65,13 @@ export class GreenMobility extends cdk.Stack {
 			})
 		);
 
-		// Allow invocation from apigateway
+		// Allow invocation from apigateway.
 		func.addPermission('ApiGatewayInvokePermission', {
 			principal: new cdk.aws_iam.ServicePrincipal('apigateway.amazonaws.com'),
 			action: 'lambda:InvokeFunction',
 		});
 
-		// Define required parameters
+		// Define required parameters.
 		new ssm.StringParameter(this, 'mapsApiToken', {
 			parameterName: '/greenmo/mapsApiToken',
 			stringValue: process.env.GOOGLE_MAPS_API_TOKEN ?? '',
@@ -101,12 +101,17 @@ class GreenMoApi extends apigw.RestApi {
 		});
 
 		const usagePlan = this.addUsagePlan('usagePlan');
+		
+		// Usage plan enforces the use of apiKey.
 		usagePlan.addApiKey(apiKey);
+		
+		// Usage plan has to be bound to a specific stage in order to work.
 		usagePlan.addApiStage({
 			stage: this.deploymentStage
 		});
 	}
 
+	// Wrapper function to add lambda to apigateway path.
 	public addLambda(func: lambda.Function, method: string, path: string) {
 		const integration = new apigw.LambdaIntegration(func);
 
