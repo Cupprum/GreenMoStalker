@@ -96,8 +96,14 @@ class GreenMoApi extends apigw.RestApi {
 			apiKeySourceType: apigw.ApiKeySourceType.HEADER,
 		});
 
-		this.addApiKey('apiKey', {
+		const apiKey = this.addApiKey('apiKey', {
 			value: 'ultratopsecretkeywhichofcourseiamgoingtouseinprod',
+		});
+
+		const usagePlan = this.addUsagePlan('usagePlan');
+		usagePlan.addApiKey(apiKey);
+		usagePlan.addApiStage({
+			stage: this.deploymentStage
 		});
 	}
 
