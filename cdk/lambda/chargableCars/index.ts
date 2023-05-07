@@ -216,10 +216,13 @@ function getPositions(): Map<string, Area> {
 }
 
 export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
-    // const location = req.body.location;  // TODO: change this
-    const location = 'DTU';
+    // console.log(event);
+    // console.log(context);
+    
+    const location = event.headers.location;
+
     if (location == undefined) {
-        const errMsg = 'Missing "location" parameter.';
+        const errMsg = 'Missing "location" header.';
         console.log(errMsg);
         return {
             statusCode: 400,
@@ -242,7 +245,6 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
             }),
         };
     }
-
 
     try {
         const carPossitions: Array<Position> = await executeGreenMoRequest(area) as Array<Position>;
@@ -277,27 +279,3 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
         }),
     };
 };
-
-// export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
-//     console.log(`Event: ${JSON.stringify(event, null, 2)}`);
-//     console.log(`Context: ${JSON.stringify(context, null, 2)}`);
-
-//     return {
-//         statusCode: 200,
-//         body: JSON.stringify({
-//             message: 'hello world',
-//         }),
-//     };
-// };
-
-// const event = {};
-// const context = {};
-
-// handler(event, context)
-//     .then((response) => {
-//         console.log(response);
-//     })
-//     .catch((error) => {
-//         console.error(error);
-//     });
-
