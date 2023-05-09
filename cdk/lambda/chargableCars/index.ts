@@ -173,45 +173,6 @@ async function exceptionPushoverRequest(msg: string) {
     await fetch(fqdn, requestOptions);
 }
 
-function getPositions(): Map<string, Area> {
-    let positions = new Map<string, Area>();
-
-    positions.set("DTU", {
-        pos1: {
-            lat: 55.794430,
-            lon: 12.511368
-        },
-        pos2: {
-            lat: 55.779566,
-            lon: 12.527933
-        }
-    });
-
-    positions.set("Lundto", {
-        pos1: {
-            lat: 55.794551,
-            lon: 12.520745
-        },
-        pos2: {
-            lat: 55.792620,
-            lon: 12.529628
-        }
-    });
-
-    positions.set("Bagsvaerd", {
-        pos1: {
-            lat: 55.759287,
-            lon: 12.451061
-        },
-        pos2: {
-            lat: 55.753806,
-            lon: 12.458088
-        }
-    });
-
-    return positions;
-}
-
 function parseAreaHeader(area: string | undefined): Area {
     if (area == undefined) {
         const errMsg = `Missing the "area" header.`;
