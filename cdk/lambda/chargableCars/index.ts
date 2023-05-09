@@ -7,6 +7,7 @@ import { Readable } from 'stream';
 
 const ssm = new SSMClient({});
 
+class ParseError extends Error { };
 class NetworkingError extends Error { };
 
 type Car = {
@@ -81,11 +82,7 @@ async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
     );
 }
 
-async function generateMapsParameters(positions: Array<Position>): Promise<string> {
-    const centerPos: Position = {
-        lat: 55.787867,
-        lon: 12.521667
-    };
+async function generateMapsParameters(centerPos: Position, positions: Array<Position>): Promise<string> {
     const center: string = `center=${centerPos.lat},${centerPos.lon}`;
 
     const size: string = "size=500x400";
@@ -102,11 +99,11 @@ async function generateMapsParameters(positions: Array<Position>): Promise<strin
 }
 
 
-async function executeMapsRequest(positions: Array<Position>): Promise<Blob> {
+async function executeMapsRequest(centerPos: Position, positions: Array<Position>): Promise<Blob> {
     const protocol: string = "https";
     const url: string = "maps.googleapis.com";
     const endpoint: string = "maps/api/staticmap";
-    const params: string = await generateMapsParameters(positions);
+    const params: string = await generateMapsParameters(centerPos, positions);
 
     const fqdn: string = `${protocol}://${url}/${endpoint}?${params}`;
 
@@ -215,41 +212,80 @@ function getPositions(): Map<string, Area> {
     return positions;
 }
 
+function parseAreaHeader(area: string | undefined): Area {
+    if (area == undefined) {
+        const errMsg = `Missing the "area" header.`;
+        throw new ParseError(errMsg);
+    }
+
+    const positions = area.split(";");
+    const pos1 = positions.at(0)?.split(",");
+    const pos2 = positions.at(1)?.split(",");
+
+    // TODO: test this
+    if (positions.length != 2 || pos1?.length != 2 || pos2?.length != 2) {
+        const errMsg = `The "area" header is in wrong format.`;
+        throw new ParseError(errMsg);
+    }
+
+    const lat1 = parseFloat(pos1.at(0) as string);
+    const lon1 = parseFloat(pos1.at(1) as string);
+    const lat2 = parseFloat(pos2.at(0) as string);
+    const lon2 = parseFloat(pos2.at(1) as string);
+
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+        const errMsg = `The "area" header is not in valid format.`;
+        throw new ParseError(errMsg);
+    }
+
+    return {
+        pos1: {
+            lat: lat1,
+            lon: lon1,
+        },
+        pos2: {
+            lat: lat2,
+            lon: lon2,
+        }
+    }
+}
+
 export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
     // console.log(event);
     // console.log(context);
-    
-    const location = event.headers.location;
 
-    if (location == undefined) {
-        const errMsg = 'Missing "location" header.';
-        console.log(errMsg);
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                message: errMsg,
-            }),
-        };
-    }
+    let area: Area;
 
-    const positions: Map<string, Area> = getPositions();
-
-    const area = positions.get(location);
-    if (area == undefined) {
-        const errMsg = 'Parameter "location" should be from dict of positions.';
-        console.log(errMsg);
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                message: errMsg,
-            }),
-        };
+    try {
+        area = parseAreaHeader(event.headers.area);
+    } catch (error) {
+        if (error instanceof ParseError) {
+            console.log(error);
+            return {
+                statusCode: 400,
+                body: JSON.stringify({
+                    message: error.message,
+                }),
+            };
+        } else {
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    message: error,
+                }),
+            };
+        }
     }
 
     try {
         const carPossitions: Array<Position> = await executeGreenMoRequest(area) as Array<Position>;
         if (carPossitions.length) {
-            const img: Blob = await executeMapsRequest(carPossitions);
+            const centerPos = {
+                lat: (area.pos1.lat + area.pos2.lat) / 2,
+                lon: (area.pos1.lon + area.pos2.lon) / 2,
+            }
+
+            const img: Blob = await executeMapsRequest(centerPos, carPossitions);
             await executePushoverRequest(img);
         }
     } catch (error) {
