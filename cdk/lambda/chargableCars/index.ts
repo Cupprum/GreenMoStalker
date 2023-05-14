@@ -1,11 +1,12 @@
 import { Context, APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda';
-import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
-import fetch, { Response } from 'node-fetch';
-import { FormData } from "formdata-node"
+import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import { FormData } from 'formdata-node';
 import { FormDataEncoder } from 'form-data-encoder';
+import fetch, { Response } from 'node-fetch';
 import { Readable } from 'stream';
 
-const ssm = new SSMClient({});
+
+const ssm = new SSMClient({ });
 
 class ParseError extends Error { };
 class NetworkingError extends Error { };
@@ -41,7 +42,7 @@ type Area = {
 
 async function getParameter(name: string): Promise<string> {
     try {
-        const command = new GetParameterCommand({Name: `/greenmo/${name}`});
+        const command = new GetParameterCommand({ Name: `/greenmo/${name}` });
         return (await ssm.send(command)).Parameter?.Value ?? '';
     } catch (error) {
         console.error(error);
@@ -49,26 +50,64 @@ async function getParameter(name: string): Promise<string> {
     }
 }
 
+function parseAreaHeader(area: string | undefined): Area {
+    if (area == undefined) {
+        const errMsg = 'Missing the "area" header.';
+        throw new ParseError(errMsg);
+    }
+
+    const positions = area.split(';');
+    const pos1 = positions.at(0)?.split(',');
+    const pos2 = positions.at(1)?.split(',');
+
+    // TODO: test this
+    if (positions.length != 2 || pos1?.length != 2 || pos2?.length != 2) {
+        const errMsg = 'The "area" header is in wrong format.';
+        throw new ParseError(errMsg);
+    }
+
+    const lat1 = parseFloat(pos1.at(0) as string);
+    const lon1 = parseFloat(pos1.at(1) as string);
+    const lat2 = parseFloat(pos2.at(0) as string);
+    const lon2 = parseFloat(pos2.at(1) as string);
+
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+        const errMsg = 'The "area" header is not in valid format.';
+        throw new ParseError(errMsg);
+    }
+
+    return {
+        pos1: {
+            lat: lat1,
+            lon: lon1,
+        },
+        pos2: {
+            lat: lat2,
+            lon: lon2,
+        }
+    }
+}
+
 function generateGreenMoParameters(area: Area): string {
-    const pos1: string = `lon1=${area.pos1.lon}&lat1=${area.pos1.lat}`;
-    const pos2: string = `lon2=${area.pos2.lon}&lat2=${area.pos2.lat}`;
+    const pos1 = `lon1=${area.pos1.lon}&lat1=${area.pos1.lat}`;
+    const pos2 = `lon2=${area.pos2.lon}&lat2=${area.pos2.lat}`;
 
     return `${pos1}&${pos2}`;
 }
 
 async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
-    const protocol: string = "https";
-    const url: string = "greenmobility.frontend.fleetbird.eu";
-    const endpoint: string = "api/prod/v1.06/map/cars";
-    const params: string = generateGreenMoParameters(area);
+    const protocol = 'https';
+    const hostname = 'greenmobility.frontend.fleetbird.eu';
+    const endpoint = 'api/prod/v1.06/map/cars';
+    const params = generateGreenMoParameters(area);
 
-    const fqdn: string = `${protocol}://${url}/${endpoint}/?${params}`;
+    const url = `${protocol}://${hostname}/${endpoint}/?${params}`;
 
-    const response: Response = await fetch(fqdn);
+    const response: Response = await fetch(url);
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
-        await exceptionPushoverRequest("Greenmo query failed");
+        await exceptionPushoverRequest('Greenmo query failed');
         const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
         throw new NetworkingError(msg);
     }
@@ -83,35 +122,35 @@ async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
 }
 
 async function generateMapsParameters(centerPos: Position, positions: Array<Position>): Promise<string> {
-    const center: string = `center=${centerPos.lat},${centerPos.lon}`;
+    const center = `center=${centerPos.lat},${centerPos.lon}`;
 
-    const size: string = "size=500x400";
+    const size = 'size=500x400';
 
-    const key: string = `key=${await getParameter('mapsApiToken')}`;
-    const zoom: string = "zoom=14";
-    const maptype: string = "maptype=satellite";
+    const key = `key=${await getParameter('mapsApiToken')}`;
+    const zoom = 'zoom=14';
+    const maptype = 'maptype=satellite';
 
     const markers: string = positions.map((pos) => {
         return `markers=color:green%7Clabel:G%7C${pos.lat},${pos.lon}`;
-    }).join("&");
+    }).join('&');
 
     return `${center}&${size}&${key}&${zoom}&${maptype}&${markers}`;
 }
 
 
 async function executeMapsRequest(centerPos: Position, positions: Array<Position>): Promise<Blob> {
-    const protocol: string = "https";
-    const url: string = "maps.googleapis.com";
-    const endpoint: string = "maps/api/staticmap";
-    const params: string = await generateMapsParameters(centerPos, positions);
+    const protocol = 'https';
+    const hostname = 'maps.googleapis.com';
+    const endpoint = 'maps/api/staticmap';
+    const params = await generateMapsParameters(centerPos, positions);
 
-    const fqdn: string = `${protocol}://${url}/${endpoint}?${params}`;
+    const url = `${protocol}://${hostname}/${endpoint}?${params}`;
 
-    const response: Response = await fetch(fqdn);
+    const response: Response = await fetch(url);
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
-        await exceptionPushoverRequest("Maps query failed");
+        await exceptionPushoverRequest('Maps query failed');
         const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
         throw new NetworkingError(msg);
     }
@@ -122,24 +161,24 @@ async function executeMapsRequest(centerPos: Position, positions: Array<Position
 async function generatePushoverBody(msg: string, img?: Blob): Promise<FormDataEncoder> {
     let formdata = new FormData();
 
-    formdata.append("token", await getParameter('pushoverApiToken'));
-    formdata.append("user", await getParameter('pushoverApiUser'));
-    formdata.append("message", msg);
+    formdata.append('token', await getParameter('pushoverApiToken'));
+    formdata.append('user', await getParameter('pushoverApiUser'));
+    formdata.append('message', msg);
 
     if (img) {
-        formdata.append("attachment", img, "image.png");
+        formdata.append('attachment', img, 'image.png');
     }
 
     return new FormDataEncoder(formdata);
 }
 
 async function executePushoverRequest(img: Blob) {
-    const protocol: string = "https";
-    const url: string = "api.pushover.net";
-    const endpoint: string = "1/messages.json";
-    const encoder: FormDataEncoder = await generatePushoverBody("Found some cars for charging.", img);
+    const protocol = 'https';
+    const hostname = 'api.pushover.net';
+    const endpoint = '1/messages.json';
+    const encoder: FormDataEncoder = await generatePushoverBody('Found some cars for charging.', img);
 
-    const fqdn: string = `${protocol}://${url}/${endpoint}`;
+    const url = `${protocol}://${hostname}/${endpoint}`;
 
     let requestOptions = {
         method: 'POST',
@@ -147,22 +186,22 @@ async function executePushoverRequest(img: Blob) {
         body: Readable.from(encoder)
     };
 
-    const response: Response = await fetch(fqdn, requestOptions);
+    const response: Response = await fetch(url, requestOptions);
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
-        await exceptionPushoverRequest("Pushover notification failed");
+        await exceptionPushoverRequest('Pushover notification failed');
         const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
         throw new NetworkingError(msg);
     }
 }
 
 async function exceptionPushoverRequest(msg: string) {
-    const protocol: string = "https";
-    const url: string = "api.pushover.net";
-    const endpoint: string = "1/messages.json";
+    const protocol = 'https';
+    const hostname = 'api.pushover.net';
+    const endpoint = '1/messages.json';
     const encoder: FormDataEncoder = await generatePushoverBody(msg);
 
-    const fqdn: string = `${protocol}://${url}/${endpoint}`;
+    const url = `${protocol}://${hostname}/${endpoint}`;
 
     let requestOptions = {
         method: 'POST',
@@ -170,45 +209,8 @@ async function exceptionPushoverRequest(msg: string) {
         body: Readable.from(encoder)
     };
 
-    await fetch(fqdn, requestOptions);
-}
-
-function parseAreaHeader(area: string | undefined): Area {
-    if (area == undefined) {
-        const errMsg = `Missing the "area" header.`;
-        throw new ParseError(errMsg);
-    }
-
-    const positions = area.split(";");
-    const pos1 = positions.at(0)?.split(",");
-    const pos2 = positions.at(1)?.split(",");
-
-    // TODO: test this
-    if (positions.length != 2 || pos1?.length != 2 || pos2?.length != 2) {
-        const errMsg = `The "area" header is in wrong format.`;
-        throw new ParseError(errMsg);
-    }
-
-    const lat1 = parseFloat(pos1.at(0) as string);
-    const lon1 = parseFloat(pos1.at(1) as string);
-    const lat2 = parseFloat(pos2.at(0) as string);
-    const lon2 = parseFloat(pos2.at(1) as string);
-
-    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
-        const errMsg = `The "area" header is not in valid format.`;
-        throw new ParseError(errMsg);
-    }
-
-    return {
-        pos1: {
-            lat: lat1,
-            lon: lon1,
-        },
-        pos2: {
-            lat: lat2,
-            lon: lon2,
-        }
-    }
+    // No need for exception handling, used only if exception occurs.
+    await fetch(url, requestOptions);
 }
 
 export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -232,7 +234,7 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
             return {
                 statusCode: 500,
                 body: JSON.stringify({
-                    message: error,
+                    message: 'unknown exception',
                 }),
             };
         }
@@ -262,7 +264,7 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
             return {
                 statusCode: 500,
                 body: JSON.stringify({
-                    message: "unknown exception",
+                    message: 'unknown exception',
                 }),
             };
         }
