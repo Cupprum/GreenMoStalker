@@ -24,7 +24,6 @@ export class GreenMobility extends cdk.Stack {
 			bundling: {
 				image: lambda.Runtime.NODEJS_18_X.bundlingImage,
 				command: [],
-
 				local: {
 					tryBundle(outputDir: string) {
 						cp.execSync(
@@ -96,6 +95,8 @@ class GreenMoApi extends apigw.RestApi {
 			apiKeySourceType: apigw.ApiKeySourceType.HEADER,
 		});
 
+		// Hide the lambda functions behind apiKey.
+		// Currently useful because i don't want to go over google maps free tier.
 		const apiKey = this.addApiKey('apiKey', {
 			value: process.env.GREENMO_API_KEY ?? '',
 		});
@@ -104,7 +105,7 @@ class GreenMoApi extends apigw.RestApi {
 		
 		// Usage plan enforces the use of apiKey.
 		usagePlan.addApiKey(apiKey);
-		
+
 		// Usage plan has to be bound to a specific stage in order to work.
 		usagePlan.addApiStage({
 			stage: this.deploymentStage
