@@ -107,7 +107,8 @@ async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
-        await exceptionPushoverRequest('Greenmo query failed');
+        // TODO: output this through the lambda function.
+        // await exceptionPushoverRequest('Greenmo query failed');
         const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
         throw new NetworkingError(msg);
     }
@@ -116,7 +117,7 @@ async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
 
     return result.filter(
         function (car: Car, _) {
-            return car.fuelLevel <= 40;
+            return car.fuelLevel <= 100;
         }
     );
 }
@@ -138,7 +139,7 @@ async function generateMapsParameters(centerPos: Position, positions: Array<Posi
 }
 
 
-async function executeMapsRequest(centerPos: Position, positions: Array<Position>): Promise<Blob> {
+async function executeMapsRequest(centerPos: Position, positions: Array<Position>): Promise<ArrayBuffer> {
     const protocol = 'https';
     const hostname = 'maps.googleapis.com';
     const endpoint = 'maps/api/staticmap';
@@ -150,67 +151,13 @@ async function executeMapsRequest(centerPos: Position, positions: Array<Position
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
-        await exceptionPushoverRequest('Maps query failed');
+        // TODO: output this through the lambda function.
+        // await exceptionPushoverRequest('Maps query failed');
         const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
         throw new NetworkingError(msg);
     }
 
-    return response.blob();
-}
-
-async function generatePushoverBody(msg: string, img?: Blob): Promise<FormDataEncoder> {
-    let formdata = new FormData();
-
-    formdata.append('token', await getParameter('pushoverApiToken'));
-    formdata.append('user', await getParameter('pushoverApiUser'));
-    formdata.append('message', msg);
-
-    if (img) {
-        formdata.append('attachment', img, 'image.png');
-    }
-
-    return new FormDataEncoder(formdata);
-}
-
-async function executePushoverRequest(img: Blob) {
-    const protocol = 'https';
-    const hostname = 'api.pushover.net';
-    const endpoint = '1/messages.json';
-    const encoder: FormDataEncoder = await generatePushoverBody('Found some cars for charging.', img);
-
-    const url = `${protocol}://${hostname}/${endpoint}`;
-
-    let requestOptions = {
-        method: 'POST',
-        headers: encoder.headers,
-        body: Readable.from(encoder)
-    };
-
-    const response: Response = await fetch(url, requestOptions);
-    const expectedStatusCode = 200;
-    if (response.status != expectedStatusCode) {
-        await exceptionPushoverRequest('Pushover notification failed');
-        const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
-        throw new NetworkingError(msg);
-    }
-}
-
-async function exceptionPushoverRequest(msg: string) {
-    const protocol = 'https';
-    const hostname = 'api.pushover.net';
-    const endpoint = '1/messages.json';
-    const encoder: FormDataEncoder = await generatePushoverBody(msg);
-
-    const url = `${protocol}://${hostname}/${endpoint}`;
-
-    let requestOptions = {
-        method: 'POST',
-        headers: encoder.headers,
-        body: Readable.from(encoder)
-    };
-
-    // No need for exception handling, used only if exception occurs.
-    await fetch(url, requestOptions);
+    return response.arrayBuffer();
 }
 
 export const handler = async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
@@ -248,8 +195,17 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
                 lon: (area.pos1.lon + area.pos2.lon) / 2,
             }
 
-            const img: Blob = await executeMapsRequest(centerPos, carPossitions);
-            await executePushoverRequest(img);
+            const img = await executeMapsRequest(centerPos, carPossitions);
+            const base64Image = Buffer.from(img).toString('base64');
+
+            // TODO: refactor the way i handle the output of the function.
+            return {
+                statusCode: 200,
+                headers: { 'Content-Type': 'image/png'},
+                body: base64Image,
+                isBase64Encoded: true
+            }
+
         }
     } catch (error) {
         console.log(error);

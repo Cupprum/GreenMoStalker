@@ -8,6 +8,30 @@ import { Construct } from 'constructs';
 var cp = require('child_process');
 
 
+function packageLambdaCode(path: string): lambda.AssetCode {
+	return lambda.Code.fromAsset(path, {
+		bundling: {
+			image: lambda.Runtime.NODEJS_18_X.bundlingImage,
+			command: [],
+			local: {
+				tryBundle(outputDir: string) {
+					cp.execSync(
+						`
+							tsc --target es6 --moduleResolution node --outDir ${outputDir} ${path}/index.ts
+							cp ${path}/package.json ${outputDir}
+							cp ${path}/package-lock.json ${outputDir}
+							cd ${outputDir}
+							npm install
+						`,
+						{ stdio: 'inherit' }
+					);
+					return true;
+				},
+			},
+		}
+	});
+}
+
 export class GreenMobility extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
 		super(scope, id, props);
@@ -19,34 +43,10 @@ export class GreenMobility extends cdk.Stack {
 		greenmoApi.addLambda(chargableCarsLambda, 'GET', 'cars');
 	}
 
-	private packageLambdaCode(path: string): lambda.AssetCode {
-		return lambda.Code.fromAsset(path, {
-			bundling: {
-				image: lambda.Runtime.NODEJS_18_X.bundlingImage,
-				command: [],
-				local: {
-					tryBundle(outputDir: string) {
-						cp.execSync(
-							`
-								tsc --target es6 --moduleResolution node --outDir ${outputDir} ${path}/index.ts
-								cp ${path}/package.json ${outputDir}
-								cp ${path}/package-lock.json ${outputDir}
-								cd ${outputDir}
-								npm install
-							`,
-							{ stdio: 'inherit' }
-						);
-						return true;
-					},
-				},
-			}
-		});
-	}
-
 	private chargableCarsLambda(): lambda.Function {
 		// Package the code.
 		const codePath = path.join(__dirname, '..', 'lambda', 'chargableCars');
-		const code = this.packageLambdaCode(codePath);
+		const code = packageLambdaCode(codePath);
 
 		const func = new lambda.Function(this, 'chargableCarsLambda', {
 			functionName: 'chargableCarsLambda',
@@ -75,11 +75,11 @@ export class GreenMobility extends cdk.Stack {
 			parameterName: '/greenmo/mapsApiToken',
 			stringValue: process.env.GOOGLE_MAPS_API_TOKEN ?? '',
 		});
-		new ssm.StringParameter(this, 'pushoverApiToken', {
+		new ssm.StringParameter(this, 'pushoverApiToken', {  // TODO: remove - legacy code
 			parameterName: '/greenmo/pushoverApiToken',
 			stringValue: process.env.PUSHOVER_API_TOKEN ?? '',
 		});
-		new ssm.StringParameter(this, 'pushoverApiUser', {
+		new ssm.StringParameter(this, 'pushoverApiUser', {  // TODO: remove - legacy code
 			parameterName: '/greenmo/pushoverApiUser',
 			stringValue: process.env.PUSHOVER_API_USER ?? '',
 		});
@@ -93,6 +93,7 @@ class GreenMoApi extends apigw.RestApi {
 		super(scope, 'greenMoApi', {
 			restApiName: 'greenmoApi',
 			apiKeySourceType: apigw.ApiKeySourceType.HEADER,
+			binaryMediaTypes: ["*/*"]  // TODO: figure out if i should specify this to */cars
 		});
 
 		// Hide the lambda functions behind apiKey.
@@ -107,9 +108,7 @@ class GreenMoApi extends apigw.RestApi {
 		usagePlan.addApiKey(apiKey);
 
 		// Usage plan has to be bound to a specific stage in order to work.
-		usagePlan.addApiStage({
-			stage: this.deploymentStage
-		});
+		usagePlan.addApiStage({ stage: this.deploymentStage });
 	}
 
 	// Wrapper function to add lambda to apigateway path.
@@ -117,8 +116,6 @@ class GreenMoApi extends apigw.RestApi {
 		const integration = new apigw.LambdaIntegration(func);
 
 		const route = this.root.addResource(path);
-		route.addMethod(method, integration, {
-			apiKeyRequired: true,
-		});
+		route.addMethod(method, integration, { apiKeyRequired: true });
 	}
 }
