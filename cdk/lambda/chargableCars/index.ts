@@ -117,7 +117,7 @@ async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
 
     return result.filter(
         function (car: Car, _) {
-            return car.fuelLevel <= 100;
+            return car.fuelLevel <= 40;  // Think about passing this as a parameter.
         }
     );
 }
