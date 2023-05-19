@@ -1,9 +1,6 @@
-import { Context, APIGatewayProxyResult, APIGatewayEvent } from 'aws-lambda';
-import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
-import { FormData } from 'formdata-node';
-import { FormDataEncoder } from 'form-data-encoder';
+import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { APIGatewayEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import fetch, { Response } from 'node-fetch';
-import { Readable } from 'stream';
 
 
 const ssm = new SSMClient({ });
@@ -107,35 +104,28 @@ async function executeGreenMoRequest(area: Area): Promise<Array<Car>> {
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
-        // TODO: output this through the lambda function.
-        // await exceptionPushoverRequest('Greenmo query failed');
         const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
         throw new NetworkingError(msg);
     }
 
     const result: Array<Car> = (await response.json()) as Array<Car>;
 
-    return result.filter(
-        function (car: Car, _) {
-            return car.fuelLevel <= 40;  // Think about passing this as a parameter.
-        }
-    );
+    // TODO: change this to parameter, probably a header
+    return result.filter((car: Car) => car.fuelLevel <= 40);
 }
 
 async function generateMapsParameters(centerPos: Position, positions: Array<Position>): Promise<string> {
-    const center = `center=${centerPos.lat},${centerPos.lon}`;
+    const arr: string[] = [];
 
-    const size = 'size=500x400';
+    arr.push(`center=${centerPos.lat},${centerPos.lon}`);
+    arr.push('size=500x400');
+    arr.push(`key=${await getParameter('mapsApiToken')}`);
+    arr.push('zoom=14');
+    arr.push('maptype=satellite');
 
-    const key = `key=${await getParameter('mapsApiToken')}`;
-    const zoom = 'zoom=14';
-    const maptype = 'maptype=satellite';
+    positions.forEach((pos) => arr.push(`markers=color:green%7Clabel:G%7C${pos.lat},${pos.lon}`));
 
-    const markers: string = positions.map((pos) => {
-        return `markers=color:green%7Clabel:G%7C${pos.lat},${pos.lon}`;
-    }).join('&');
-
-    return `${center}&${size}&${key}&${zoom}&${maptype}&${markers}`;
+    return arr.join('&');
 }
 
 
@@ -151,8 +141,6 @@ async function executeMapsRequest(centerPos: Position, positions: Array<Position
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
-        // TODO: output this through the lambda function.
-        // await exceptionPushoverRequest('Maps query failed');
         const msg = `Invalid response code. Got ${response.status}, expected ${expectedStatusCode}`;
         throw new NetworkingError(msg);
     }
@@ -187,6 +175,8 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
         }
     }
 
+    var resp: string = '';
+
     try {
         const carPossitions: Array<Position> = await executeGreenMoRequest(area) as Array<Position>;
         if (carPossitions.length) {
@@ -196,16 +186,10 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
             }
 
             const img = await executeMapsRequest(centerPos, carPossitions);
-            const base64Image = Buffer.from(img).toString('base64');
 
-            // TODO: refactor the way i handle the output of the function.
-            return {
-                statusCode: 200,
-                headers: { 'Content-Type': 'image/png'},
-                body: base64Image,
-                isBase64Encoded: true
-            }
-
+            // API gateway behaves like a proxy, the image has to be base64 encoded string with appropriate
+            // headers and apigw translates it to blob.
+            resp = Buffer.from(img).toString('base64');
         }
     } catch (error) {
         console.log(error);
@@ -229,8 +213,10 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
     console.log('Success');
     return {
         statusCode: 200,
-        body: JSON.stringify({
+        headers: resp ? { 'Content-Type': 'image/png'} : undefined,
+        body: resp ?? JSON.stringify({
             message: 'Success',
         }),
-    };
+        isBase64Encoded: resp ? true : false,
+    }
 };
