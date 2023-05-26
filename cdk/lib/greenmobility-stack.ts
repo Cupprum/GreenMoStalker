@@ -75,14 +75,6 @@ export class GreenMobility extends cdk.Stack {
 			parameterName: '/greenmo/mapsApiToken',
 			stringValue: process.env.GOOGLE_MAPS_API_TOKEN ?? '',
 		});
-		new ssm.StringParameter(this, 'pushoverApiToken', {  // TODO: remove - legacy code
-			parameterName: '/greenmo/pushoverApiToken',
-			stringValue: process.env.PUSHOVER_API_TOKEN ?? '',
-		});
-		new ssm.StringParameter(this, 'pushoverApiUser', {  // TODO: remove - legacy code
-			parameterName: '/greenmo/pushoverApiUser',
-			stringValue: process.env.PUSHOVER_API_USER ?? '',
-		});
 
 		return func;
 	}
@@ -93,7 +85,7 @@ class GreenMoApi extends apigw.RestApi {
 		super(scope, 'greenMoApi', {
 			restApiName: 'greenmoApi',
 			apiKeySourceType: apigw.ApiKeySourceType.HEADER,
-			binaryMediaTypes: ["*/*"]  // TODO: figure out if i should specify this to */cars
+			binaryMediaTypes: ["*/*"]
 		});
 
 		// Hide the lambda functions behind apiKey.
