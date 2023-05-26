@@ -214,9 +214,7 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
     return {
         statusCode: 200,
         headers: resp ? { 'Content-Type': 'image/png'} : undefined,
-        body: resp ? resp: JSON.stringify({
-            message: 'Success',
-        }),
+        body: resp ? resp: 'No cars were found.',
         isBase64Encoded: resp ? true : false,
     }
 };
