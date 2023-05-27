@@ -85,7 +85,7 @@ async function executeGreenMoRequest(params: string): Promise<Array<Car>> {
     const result: Array<Car> = (await response.json()) as Array<Car>;
 
     // TODO: change this to parameter, probably a header
-    return result.filter((car: Car) => car.fuelLevel <= 100);
+    return result.filter((car: Car) => car.fuelLevel <= 40);
 }
 
 async function generateMapsParameters(centerPos: Position, positions: Array<Position>): Promise<string> {
