@@ -73,7 +73,7 @@ export class GreenMobility extends cdk.Stack {
 		// Define required parameters.
 		new ssm.StringParameter(this, 'mapsApiToken', {
 			parameterName: '/greenmo/mapsApiToken',
-			stringValue: process.env.GOOGLE_MAPS_API_TOKEN ?? '',
+			stringValue: process.env.OPEN_MAPS_API_TOKEN ?? '',
 		});
 
 		return func;
