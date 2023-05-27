@@ -161,7 +161,7 @@ export const handler = async (event: APIGatewayEvent, context: Context): Promise
         if (carPossitions.length) {
             const centerPos = {
                 lat: (pos1.lat + pos2.lat) / 2,
-                lon: (pos1.lon + pos2.lat) / 2,
+                lon: (pos1.lon + pos2.lon) / 2,
             }
             const img = await executeMapsRequest(centerPos, carPossitions);
 
