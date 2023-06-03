@@ -15,3 +15,15 @@ The latest iteration of this project introduced significant changes to the deplo
 ### Calling the API from Various Devices:
 
 The API Gateway can be accessed from different devices, including iPhones using the [Shortcuts](https://support.apple.com/en-gb/guide/shortcuts/welcome/ios) app. Apple shortcuts provide powerful automation capabilities, such as detecting when a user is returning home and querying for available cars to charge in the surrounding area. Additionally, simple cronjobs can be defined on the phone, allowing for checks to determine if running the cronjob is feasible when the user is not in the correct location.
+
+### Reasoning:
+
+Several factors influenced my decision to make certain changes in the project:
+
+1. Moving away from GCP: I chose to shift away from GCP due to concerns regarding their billing practices and the lack of transparency in understanding the charges associated with specific resources. Additionally, GCP lacks a comparable tool to AWS CDK, which I found preferable for handling deployments. The AWS CDK's ability to write infrastructure using a programming language allows for faster iterations and, in my opinion, improves code readability, especially on shorter projects.
+
+2. Transition from Terraform to AWS CDK: I made the decision to switch from Terraform to AWS CDK because I find writing infrastructure in a programming language more intuitive. This change allows for faster iterations and simplifies the development process.
+
+3. Choice of storing secrets: Instead of utilizing [Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html) to store secrets, I opted for using [SSM Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html). This decision was driven by cost considerations, as SSM Parameter Store is less expensive than Secrets Manager. Additionally, since the secrets I'm dealing with don't require the extra protection provided by Secrets Manager, I found Parameter Store to be a suitable and more cost-effective alternative.
+
+4. Switching to Geoapify Static Maps API: I transitioned from using Google Maps Static API to Geoapify Static Maps API due to the requirements imposed by Google. The Google API necessitates attaching a credit card to the account, while Geoapify offers a free tier without the need for credit card details. Moreover, I appreciate that Geoapify utilizes the [OpenStreetMap](https://www.openstreetmap.org/) infrastructure, which adds to its appeal.
