@@ -7,7 +7,6 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 var cp = require('child_process');
 
-
 function packageLambdaCode(path: string): lambda.AssetCode {
     return lambda.Code.fromAsset(path, {
         bundling: {
@@ -23,12 +22,12 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                             cd ${outputDir}
                             npm install
                         `,
-                        { stdio: 'inherit' }
+                        { stdio: 'inherit' },
                     );
                     return true;
                 },
             },
-        }
+        },
     });
 }
 
@@ -60,13 +59,17 @@ export class GreenMobility extends cdk.Stack {
         func.addToRolePolicy(
             new iam.PolicyStatement({
                 actions: ['ssm:GetParameter'],
-                resources: [`arn:aws:ssm:${this.region}:${this.account}:parameter/greenmo/*`],
-            })
+                resources: [
+                    `arn:aws:ssm:${this.region}:${this.account}:parameter/greenmo/*`,
+                ],
+            }),
         );
 
         // Allow invocation from apigateway.
         func.addPermission('ApiGatewayInvokePermission', {
-            principal: new cdk.aws_iam.ServicePrincipal('apigateway.amazonaws.com'),
+            principal: new cdk.aws_iam.ServicePrincipal(
+                'apigateway.amazonaws.com',
+            ),
             action: 'lambda:InvokeFunction',
         });
 
@@ -85,7 +88,7 @@ class GreenMoApi extends apigw.RestApi {
         super(scope, 'greenMoApi', {
             restApiName: 'greenmoApi',
             apiKeySourceType: apigw.ApiKeySourceType.HEADER,
-            binaryMediaTypes: ["*/*"]
+            binaryMediaTypes: ['*/*'],
         });
 
         // Hide the lambda functions behind apiKey.
