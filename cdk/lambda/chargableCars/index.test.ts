@@ -50,18 +50,20 @@ describe('when request is received', () => {
     });
 
     test('the image containg a map is generated', async () => {
-        const centerPos = { lat: 0, lon: 0 };
+        const centerPos = { lat: 1.123456, lon: 1.123456 };
         const positions = [
-            { lat: 0, lon: 0 },
-            { lat: 0, lon: 0 },
+            { lat: 1.123456, lon: 2.123456 },
+            { lat: 3.123456, lon: 4.123456 },
         ];
 
+        const mockOutput = Buffer.from([0xff, 0xff, 0xff]);
+
         (axios.get as jest.Mock).mockImplementation(() =>
-            Promise.resolve({ status: 200, data: 'xxx' })
+            Promise.resolve({ status: 200, data: mockOutput })
         );
 
         await executeMapsRequest(centerPos, positions).then((data) =>
-            expect(data).toEqual('xxx')
+            expect(data).toBe(mockOutput)
         );
     });
 
