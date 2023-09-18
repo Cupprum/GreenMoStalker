@@ -140,8 +140,8 @@ export const handler = async (
     event: APIGatewayEvent,
     context: Context
 ): Promise<APIGatewayProxyResult> => {
-    console.log(event); // Verify why i do not have a string here
-    console.log(context); // Verify why i do not have a string here
+    console.log(event); // TODO: Verify why i do not have a string here
+    console.log(context); // TODO: Verify why i do not have a string here
 
     const parameters = event.queryStringParameters;
     if (!parameters) {
@@ -173,6 +173,15 @@ export const handler = async (
 
             resp = transformImage(img);
         }
+
+        console.log('Success');
+        // TODO: i dont think the 'no cars were found works'.
+        return {
+            statusCode: 200,
+            headers: resp ? { 'Content-Type': 'image/png' } : undefined,
+            body: resp ? resp : 'No cars were found.',
+            isBase64Encoded: resp ? true : false,
+        };
     } catch (error) {
         console.log(error);
         if (error instanceof NetworkingError) {
@@ -181,17 +190,6 @@ export const handler = async (
             return response(500, 'unknown exception');
         }
     }
-
-    console.log('Success');
-    // console.log(resp);
-    // console.log(resp ? true : false);
-
-    return {
-        statusCode: 200,
-        headers: resp ? { 'Content-Type': 'image/png' } : undefined,
-        body: resp ? resp : 'No cars were found.',
-        isBase64Encoded: resp ? true : false,
-    };
 };
 
 // const event = {
