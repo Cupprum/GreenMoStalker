@@ -62,7 +62,7 @@ export async function executeGreenMoRequest(
 
     const url = `${protocol}://${hostname}/${endpoint}/?${parameters}`;
 
-    console.log(`Execute HTTP request against: ${url}`);
+    console.log(`Execute HTTP request against: ${url}.`);
     const response = await axios.get(url);
 
     const expectedStatusCode = 200;
@@ -109,7 +109,7 @@ export async function executeMapsRequest(
 
     const url = `${protocol}://${hostname}/${endpoint}?${params}`;
 
-    console.log(`Execute HTTP request against: ${url}`);
+    console.log(`Execute HTTP request against: ${url}.`);
     const response = await axios.get(url, { responseType: 'arraybuffer' });
 
     const expectedStatusCode = 200;
@@ -127,7 +127,8 @@ export function transformImage(img: ArrayBuffer): string {
     return Buffer.from(img).toString('base64');
 }
 
-function response(statusCode: number, message: string) {
+function errResponse(statusCode: number, message: string) {
+    console.log('The lambda function execution failed.');
     return {
         statusCode: statusCode,
         body: JSON.stringify({
@@ -140,56 +141,86 @@ export const handler = async (
     event: APIGatewayEvent,
     context: Context
 ): Promise<APIGatewayProxyResult> => {
+    console.log('The lambda function execution start.');
+
     console.log(event); // TODO: Verify why i do not have a string here
     console.log(context); // TODO: Verify why i do not have a string here
 
+    console.log('Parse possitions from query string parameters.');
     const parameters = event.queryStringParameters;
     if (!parameters) {
-        return response(400, 'The query parameters are missing.');
+        const errMsg = 'The query string parameters are missing.';
+        console.error(errMsg);
+        return errResponse(400, errMsg);
     }
 
     let pos1, pos2: Position;
     try {
         [pos1, pos2] = parsePositions(parameters);
     } catch (error) {
-        console.log(error);
+        console.error('Parsing positions failed.');
+        console.error(error);
         if (error instanceof ParseError) {
-            return response(400, error.message);
+            return errResponse(400, error.message);
         } else {
-            return response(500, 'unknown exception');
+            return errResponse(500, 'unknown exception');
         }
     }
+    console.log('Positions successfully parsed.');
 
-    let resp = '';
+    console.log('Fetch cars in desired location.');
+    let carPositions: Position[];
     try {
         const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
-        const carPossitions = (await executeGreenMoRequest(
-            greenMoParams
-        )) as Position[];
-
-        if (carPossitions && carPossitions.length) {
-            const centerPos = calculateCenter(pos1, pos2);
-            const img = await executeMapsRequest(centerPos, carPossitions);
-
-            resp = transformImage(img);
-        }
-
-        console.log('Success');
-        // TODO: i dont think the 'no cars were found works'.
-        return {
-            statusCode: 200,
-            headers: resp ? { 'Content-Type': 'image/png' } : undefined,
-            body: resp ? resp : 'No cars were found.',
-            isBase64Encoded: resp ? true : false,
-        };
+        carPositions = await executeGreenMoRequest(greenMoParams);
     } catch (error) {
+        console.error('Failed fetching cars for charging.');
         console.log(error);
         if (error instanceof NetworkingError) {
-            return response(403, error.message);
+            return errResponse(403, error.message);
         } else {
-            return response(500, 'unknown exception');
+            return errResponse(500, 'unknown exception');
         }
     }
+
+    let resp: APIGatewayProxyResult;
+    if (carPositions.length == 0) {
+        const msg = 'No cars for charging were found.';
+        console.log(msg);
+
+        // TODO: i dont think the 'no cars were found works'.
+        resp = { statusCode: 200, body: msg };
+    } else {
+        console.log('Cars for charging were found.');
+
+        console.log('Generate map of chargable cars.');
+        const centerPos = calculateCenter(pos1, pos2);
+        let img: ArrayBuffer;
+        try {
+            img = await executeMapsRequest(centerPos, carPositions);
+        } catch (error) {
+            console.error('Generating map failed.');
+            console.log(error);
+            if (error instanceof NetworkingError) {
+                return errResponse(403, error.message);
+            } else {
+                return errResponse(500, 'unknown exception');
+            }
+        }
+        console.log('Map generated successfully.');
+
+        const transformedImage = transformImage(img);
+
+        resp = {
+            statusCode: 200,
+            headers: { 'Content-Type': 'image/png' },
+            body: transformedImage,
+            isBase64Encoded: true,
+        };
+    }
+
+    console.log('The lambda function finished successfully.');
+    return resp;
 };
 
 // const event = {
