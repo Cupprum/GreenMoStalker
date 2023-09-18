@@ -3,20 +3,29 @@
     "type": "module",
     "main": "index.js",
     "dependencies": {
-        "@aws-sdk/client-ssm": "^3.267.0",
+        "@aws-lambda-powertools/parameters": "^1.12.1",
+        "@aws-sdk/client-ssm": "^3.409.0",
+        "axios": "^1.5.0",
         "dist": "^0.1.2",
         "form-data-encoder": "^2.1.4",
-        "formdata-node": "^5.0.0",
-        "node-fetch": "^3.3.0"
+        "formdata-node": "^5.0.0"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.111",
         "@types/node": "^18.15.0",
         "aws-lambda": "1.0.7",
+        "tsx": "^3.12.8",
         "typescript": "4.9.5"
     },
     "scripts": {
         "build": "tsc --target es6 --moduleResolution node --outDir dist index.ts",
-        "start": "node dist/index.js"
+        "start": "node dist/index.js",
+        "test": "jest"
+    },
+    "jest": {
+        "preset": "ts-jest"
+    },
+    "ts-jest": {
+        "isolatedModules": true
     }
 }

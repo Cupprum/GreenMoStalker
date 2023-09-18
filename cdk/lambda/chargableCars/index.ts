@@ -1,92 +1,69 @@
-import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import {
     APIGatewayEvent,
     APIGatewayProxyEventQueryStringParameters,
     APIGatewayProxyResult,
     Context,
 } from 'aws-lambda';
-import fetch, { Response } from 'node-fetch';
-
-const ssm = new SSMClient({});
+import axios from 'axios';
 
 class ParseError extends Error {}
 class NetworkingError extends Error {}
 
-type Car = {
+interface Car {
     carId: number;
-    age: number;
-    title: string;
     lat: number;
     lon: number;
-    licencePlate: string;
     fuelLevel: number;
-    vehicleStateId: number;
-    vehicleTypeId: number;
-    pricingTime: string;
-    pricingParking: string;
-    reservationState: number;
-    address: string;
-    zipCode: string;
-    city: string;
-    locationId: number;
-};
+}
 
 type Position = {
     lat: number;
     lon: number;
 };
 
-async function getParameter(name: string): Promise<string> {
-    try {
-        const command = new GetParameterCommand({ Name: `/greenmo/${name}` });
-        return (await ssm.send(command)).Parameter?.Value ?? '';
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
-}
-
-function getPossitions(
-    parameters: APIGatewayProxyEventQueryStringParameters | null,
+export function parsePositions(
+    parameters: APIGatewayProxyEventQueryStringParameters
 ): [Position, Position] {
-    if (!parameters) {
-        const errMsg = 'The query parameters are missing.';
-        throw new ParseError(errMsg);
+    const lat1 = parseFloat(parameters['lat1'] as string);
+    const lon1 = parseFloat(parameters['lon1'] as string);
+
+    if (isNaN(lat1) || isNaN(lon1)) {
+        throw new ParseError('The positions are not in a valid format.');
     }
 
-    const pos1: Position = {
-        lat: parseFloat(parameters['lat1'] as string),
-        lon: parseFloat(parameters['lon1'] as string),
-    };
+    const pos1: Position = { lat: lat1, lon: lon1 };
 
-    const pos2: Position = {
-        lat: parseFloat(parameters['lat2'] as string),
-        lon: parseFloat(parameters['lon2'] as string),
-    };
+    const lat2 = parseFloat(parameters['lat2'] as string);
+    const lon2 = parseFloat(parameters['lon2'] as string);
 
-    if (
-        isNaN(pos1.lon) ||
-        isNaN(pos1.lat) ||
-        isNaN(pos2.lon) ||
-        isNaN(pos2.lat)
-    ) {
-        const errMsg =
-            'The query parameters "lon1", ..., "lat2" are not in a valid format.';
-        throw new ParseError(errMsg);
+    if (isNaN(lat2) || isNaN(lon2)) {
+        throw new ParseError('The positions are not in a valid format.');
     }
+
+    const pos2: Position = { lat: lat2, lon: lon2 };
 
     return [pos1, pos2];
 }
 
-async function executeGreenMoRequest(params: string): Promise<Array<Car>> {
+function calculateCenter(topLeft: Position, bottomRight: Position): Position {
+    return {
+        lat: (topLeft.lat + bottomRight.lat) / 2,
+        lon: (topLeft.lon + bottomRight.lon) / 2,
+    };
+}
+
+export async function executeGreenMoRequest(
+    parameters: string
+): Promise<Car[]> {
     const protocol = 'https';
     const hostname = 'greenmobility.frontend.fleetbird.eu';
     const endpoint = 'api/prod/v1.06/map/cars';
 
-    const url = `${protocol}://${hostname}/${endpoint}/?${params}`;
+    const url = `${protocol}://${hostname}/${endpoint}/?${parameters}`;
 
     console.log(`Execute HTTP request against: ${url}`);
-    const response: Response = await fetch(url);
+    const response = await axios.get(url);
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
@@ -94,37 +71,36 @@ async function executeGreenMoRequest(params: string): Promise<Array<Car>> {
         throw new NetworkingError(msg);
     }
 
-    const result: Array<Car> = (await response.json()) as Array<Car>;
+    const result = response.data as Car[];
 
     // TODO: change this to parameter, probably a header
     return result.filter((car: Car) => car.fuelLevel <= 40);
 }
 
 async function generateMapsParameters(
-    centerPos: Position,
-    positions: Array<Position>,
+    centerPosition: Position,
+    carPositions: Array<Position>
 ): Promise<string> {
     const arr: string[] = [];
 
     arr.push('style=maptiler-3d');
     arr.push('width=600');
     arr.push('height=600');
-    arr.push(`center=lonlat:${centerPos.lon},${centerPos.lat}`);
+    arr.push(`center=lonlat:${centerPosition.lon},${centerPosition.lat}`);
     arr.push('zoom=14');
 
-    const marks = positions.map(
-        (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`,
+    const pins = carPositions.map(
+        (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`
     );
-    arr.push(`marker=${marks.join('|')}`);
+    arr.push(`marker=${pins.join('|')}`);
 
-    arr.push(`apiKey=${await getParameter('mapsApiToken')}`);
-
+    arr.push(`apiKey=${await getParameter('/greenmo/mapsApiToken')}`);
     return arr.join('&');
 }
 
-async function executeMapsRequest(
+export async function executeMapsRequest(
     centerPos: Position,
-    positions: Array<Position>,
+    positions: Array<Position>
 ): Promise<ArrayBuffer> {
     const protocol = 'https';
     const hostname = 'maps.geoapify.com';
@@ -134,7 +110,7 @@ async function executeMapsRequest(
     const url = `${protocol}://${hostname}/${endpoint}?${params}`;
 
     console.log(`Execute HTTP request against: ${url}`);
-    const response: Response = await fetch(url);
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
@@ -142,77 +118,74 @@ async function executeMapsRequest(
         throw new NetworkingError(msg);
     }
 
-    return response.arrayBuffer();
+    return response.data as ArrayBuffer;
+}
+
+export function transformImage(img: ArrayBuffer): string {
+    // API gateway behaves like a proxy, the image has to be base64 encoded string with appropriate
+    // headers and apigw afterwards translates it to blob.
+    return Buffer.from(img).toString('base64');
+}
+
+function response(statusCode: number, message: string) {
+    return {
+        statusCode: statusCode,
+        body: JSON.stringify({
+            message: message,
+        }),
+    };
 }
 
 export const handler = async (
     event: APIGatewayEvent,
-    context: Context,
+    context: Context
 ): Promise<APIGatewayProxyResult> => {
-    console.log(event);
-    console.log(context);
+    console.log(event); // Verify why i do not have a string here
+    console.log(context); // Verify why i do not have a string here
+
+    const parameters = event.queryStringParameters;
+    if (!parameters) {
+        return response(400, 'The query parameters are missing.');
+    }
 
     let pos1, pos2: Position;
     try {
-        [pos1, pos2] = getPossitions(event.queryStringParameters);
+        [pos1, pos2] = parsePositions(parameters);
     } catch (error) {
         console.log(error);
         if (error instanceof ParseError) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({
-                    message: error.message,
-                }),
-            };
+            return response(400, error.message);
         } else {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    message: 'unknown exception',
-                }),
-            };
+            return response(500, 'unknown exception');
         }
     }
 
-    let resp: string = '';
-
+    let resp = '';
     try {
         const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
         const carPossitions = (await executeGreenMoRequest(
-            greenMoParams,
-        )) as Array<Position>;
+            greenMoParams
+        )) as Position[];
 
-        if (carPossitions.length) {
-            const centerPos = {
-                lat: (pos1.lat + pos2.lat) / 2,
-                lon: (pos1.lon + pos2.lon) / 2,
-            };
+        if (carPossitions && carPossitions.length) {
+            const centerPos = calculateCenter(pos1, pos2);
             const img = await executeMapsRequest(centerPos, carPossitions);
 
-            // API gateway behaves like a proxy, the image has to be base64 encoded string with appropriate
-            // headers and apigw translates it to blob.
-            resp = Buffer.from(img).toString('base64');
+            resp = transformImage(img);
         }
     } catch (error) {
         console.log(error);
         if (error instanceof NetworkingError) {
-            return {
-                statusCode: 403,
-                body: JSON.stringify({
-                    message: error.message,
-                }),
-            };
+            return response(403, error.message);
         } else {
-            return {
-                statusCode: 500,
-                body: JSON.stringify({
-                    message: 'unknown exception',
-                }),
-            };
+            return response(500, 'unknown exception');
         }
     }
 
     console.log('Success');
+    // console.log(resp);
+    // console.log(resp ? true : false);
+
     return {
         statusCode: 200,
         headers: resp ? { 'Content-Type': 'image/png' } : undefined,
@@ -220,3 +193,14 @@ export const handler = async (
         isBase64Encoded: resp ? true : false,
     };
 };
+
+// const event = {
+//     queryStringParameters: {
+//         lon1: "12.511368",
+//         lat1: "55.794430",
+//         lon2: "12.527933",
+//         lat2: "55.779566"
+//     }
+// }
+
+// handler(event, {});
