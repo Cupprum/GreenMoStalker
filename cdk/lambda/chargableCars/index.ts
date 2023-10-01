@@ -79,7 +79,7 @@ export async function executeGreenMoRequest(
 
 async function generateMapsParameters(
     centerPosition: Position,
-    carPositions: Array<Position>
+    carPositions: Position[]
 ): Promise<string> {
     const arr: string[] = [];
 
@@ -100,7 +100,7 @@ async function generateMapsParameters(
 
 export async function executeMapsRequest(
     centerPos: Position,
-    positions: Array<Position>
+    positions: Position[]
 ): Promise<ArrayBuffer> {
     const protocol = 'https';
     const hostname = 'maps.geoapify.com';
