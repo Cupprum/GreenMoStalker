@@ -4,11 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches: ["master"]
-  pull_request:
-    branches: ["master"]
 
 env:
-  AWS_REGION: "eu-central-1"
+  AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
   deploy:
@@ -24,12 +22,12 @@ jobs:
         working-directory: cdk
       - run: npm i
         working-directory: cdk/lambda/chargableCars
-      # - run: npm test
-      #   working-directory: cdk
+      - run: npm test
+        working-directory: cdk
       - run: npx cdk deploy
         working-directory: cdk
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           OPEN_MAPS_API_TOKEN: ${{ secrets.OPEN_MAPS_API_TOKEN }}
-          CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
+          CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT }}
