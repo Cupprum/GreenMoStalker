@@ -5,10 +5,7 @@
         "cdk": "bin/cdk.js"
     },
     "scripts": {
-        "build": "tsc",
-        "watch": "tsc -w",
         "test": "jest",
-        "cdk": "cdk",
         "prepare": "cd .. && husky install cdk/.husky"
     },
     "devDependencies": {
@@ -31,8 +28,7 @@
         "constructs": "^10.0.0",
         "install": "^0.13.0",
         "npm": "^9.4.2",
-        "source-map-support": "^0.5.21",
-        "testfunction": "file:cdk.out/asset.6b2351a4b145daf103ebae4e7f5a00a5149fd727b6fbe5bab7bdcc1d98dc49c8"
+        "source-map-support": "^0.5.21"
     },
     "jest": {
         "preset": "ts-jest"

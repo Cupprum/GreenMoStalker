@@ -1,5 +1,5 @@
 {
-    "name": "testfunction",
+    "name": "chargablecars",
     "type": "module",
     "main": "index.js",
     "dependencies": {
@@ -18,8 +18,6 @@
         "typescript": "4.9.5"
     },
     "scripts": {
-        "build": "tsc --target es6 --moduleResolution node --outDir dist index.ts",
-        "start": "node dist/index.js",
         "test": "jest"
     },
     "jest": {
