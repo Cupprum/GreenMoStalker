@@ -33,4 +33,3 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ vars.AWS_SECRET_ACCESS_KEY }}
           OPEN_MAPS_API_TOKEN: ${{ vars.OPEN_MAPS_API_TOKEN }}
           CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
-          CDK_DEFAULT_REGION: ${{ vars.CDK_DEFAULT_REGION }}
