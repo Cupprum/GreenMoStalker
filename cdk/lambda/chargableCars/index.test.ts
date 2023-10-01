@@ -6,8 +6,10 @@ import {
 } from './index';
 
 import axios from 'axios';
+import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 
 jest.mock('axios');
+jest.mock('@aws-lambda-powertools/parameters/ssm');
 
 describe('when request is received', () => {
     test('then the position is parsed from request', () => {
@@ -57,6 +59,10 @@ describe('when request is received', () => {
         ];
 
         const mockOutput = Buffer.from([0xff, 0xff, 0xff]);
+
+        (getParameter as jest.Mock).mockImplementation(() =>
+            Promise.resolve('xxx')
+        );
 
         (axios.get as jest.Mock).mockImplementation(() =>
             Promise.resolve({ status: 200, data: mockOutput })
