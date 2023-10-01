@@ -19,5 +19,7 @@ jobs:
           node-version: 18
       - run: npm i
         working-directory: cdk
+      - run: npm i
+        working-directory: cdk/lambda/chargableCars
       - run: npm test
         working-directory: cdk
