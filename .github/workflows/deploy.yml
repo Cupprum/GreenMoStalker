@@ -26,6 +26,7 @@ jobs:
       - run: npm test
         working-directory: cdk
       - run: npx cdk deploy
+        working-directory: cdk
         env:
           AWS_ACCESS_KEY_ID: ${{ vars.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ vars.AWS_SECRET_ACCESS_KEY }}
