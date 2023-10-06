@@ -22,7 +22,7 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                             cd ${outputDir}
                             npm install
                         `,
-                        { stdio: 'inherit' },
+                        { stdio: 'inherit' }
                     );
                     return true;
                 },
@@ -44,7 +44,13 @@ export class GreenMobility extends cdk.Stack {
 
     private chargableCarsLambda(): lambda.Function {
         // Package the code.
-        const codePath = path.join(__dirname, '..', 'lambda', 'chargableCars');
+        const codePath = path.join(
+            __dirname,
+            '..',
+            '..',
+            'logic',
+            'chargableCars'
+        );
         const code = packageLambdaCode(codePath);
 
         const func = new lambda.Function(this, 'chargableCarsLambda', {
@@ -62,13 +68,13 @@ export class GreenMobility extends cdk.Stack {
                 resources: [
                     `arn:aws:ssm:${this.region}:${this.account}:parameter/greenmo/*`,
                 ],
-            }),
+            })
         );
 
         // Allow invocation from apigateway.
         func.addPermission('ApiGatewayInvokePermission', {
             principal: new cdk.aws_iam.ServicePrincipal(
-                'apigateway.amazonaws.com',
+                'apigateway.amazonaws.com'
             ),
             action: 'lambda:InvokeFunction',
         });
