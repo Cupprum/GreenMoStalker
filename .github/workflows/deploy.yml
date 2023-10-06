@@ -1,46 +1,51 @@
 name: GreenMo Stalker deployment
 
 on:
-  workflow_dispatch:
-  push:
-    branches: ["master"]
+    workflow_dispatch:
+    push:
+        branches: ['master']
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
+    AWS_REGION: ${{ vars.AWS_REGION }}
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: npm i
-        working-directory: logic/chargableCars
-      - run: npm test
-        working-directory: logic/chargableCars
+    logic:
+        runs-on: ubuntu-latest
+        environment: production
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 18
+            - run: npm i
+              name: install
+              working-directory: logic/chargableCars
+            - run: npm test
+              name: test
+              working-directory: logic/chargableCars
 
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    environment: production
-    needs: test
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: npm i
-        working-directory: cdk
-      - run: npm test
-        working-directory: cdk
-      - run: npx cdk deploy
-        working-directory: cdk
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          OPEN_MAPS_API_TOKEN: ${{ secrets.OPEN_MAPS_API_TOKEN }}
-          CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT }}
+    infra:
+        runs-on: ubuntu-latest
+        environment: production
+        needs: logic
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 18
+            - run: npm i
+              name: install
+              working-directory: cdk
+            - run: npm test
+              name: test
+              working-directory: cdk
+            - run: npx cdk deploy
+              name: deploy
+              working-directory: cdk
+              env:
+                  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  OPEN_MAPS_API_TOKEN: ${{ secrets.OPEN_MAPS_API_TOKEN }}
+                  CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT }}
