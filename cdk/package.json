@@ -22,13 +22,8 @@
         "typescript": "~4.9.5"
     },
     "dependencies": {
-        "@aws-cdk/aws-lambda": "^1.192.0",
-        "@types/aws-lambda": "^8.10.110",
         "aws-cdk-lib": "2.64.0",
-        "chargablecars": "file:lambda/chargableCars",
         "constructs": "^10.0.0",
-        "install": "^0.13.0",
-        "npm": "^9.4.2",
         "source-map-support": "^0.5.21"
     },
     "jest": {

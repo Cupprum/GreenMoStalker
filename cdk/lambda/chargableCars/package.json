@@ -6,7 +6,6 @@
         "@aws-lambda-powertools/parameters": "^1.12.1",
         "@aws-sdk/client-ssm": "^3.409.0",
         "axios": "^1.5.0",
-        "dist": "^0.1.2",
         "form-data-encoder": "^2.1.4",
         "formdata-node": "^5.0.0"
     },
