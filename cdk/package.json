@@ -14,6 +14,7 @@
         "@types/node": "^18.11.18",
         "aws-cdk": "2.64.0",
         "cdk": "^2.92.0",
+        "chargablecars": "file:../logic/chargableCars",
         "jest": "^29.4.1",
         "ts-jest": "^29.0.5",
         "ts-node": "^10.9.1",
