@@ -1,7 +1,5 @@
 {
     "name": "chargablecars",
-    "type": "module",
-    "main": "index.js",
     "dependencies": {
         "@aws-lambda-powertools/parameters": "^1.12.1",
         "@aws-sdk/client-ssm": "^3.409.0",

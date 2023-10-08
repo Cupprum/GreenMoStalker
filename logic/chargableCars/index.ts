@@ -1,9 +1,9 @@
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 import {
-    APIGatewayEvent,
-    APIGatewayProxyEventQueryStringParameters,
-    APIGatewayProxyResult,
-    Context,
+    type APIGatewayEvent,
+    type APIGatewayProxyEventQueryStringParameters,
+    type APIGatewayProxyResult,
+    type Context,
 } from 'aws-lambda';
 import axios from 'axios';
 

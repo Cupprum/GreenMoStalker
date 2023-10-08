@@ -16,11 +16,9 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                 tryBundle(outputDir: string) {
                     cp.execSync(
                         `
-                            tsc --target es6 --moduleResolution node --outDir ${outputDir} ${path}/index.ts
-                            cp ${path}/package.json ${outputDir}
-                            cp ${path}/package-lock.json ${outputDir}
-                            cd ${outputDir}
+                            cd ${path}
                             npm install
+                            tsc --outDir ${outputDir} ${path}/index.ts
                         `,
                         { stdio: 'inherit' }
                     );

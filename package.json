@@ -4,6 +4,8 @@
     },
     "devDependencies": {
         "@types/jest": "^29.5.5",
+        "cdk": "file:cdk",
+        "chargablecars": "file:logic/chargableCars",
         "husky": "^8.0.0",
         "jest": "^29.7.0",
         "prettier": "^2.8.0",
