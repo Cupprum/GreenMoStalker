@@ -19,6 +19,10 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                             cd ${path}
                             npm install
                             tsc --outDir ${outputDir} ${path}/index.ts
+                            cp ${path}/package.json ${outputDir}
+                            cp ${path}/package-lock.json ${outputDir}
+                            cd ${outputDir}
+                            npm install
                         `,
                         { stdio: 'inherit' }
                     );
