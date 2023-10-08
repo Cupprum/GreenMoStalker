@@ -219,6 +219,7 @@ export const handler = async (
         };
     }
 
+    console.log('test');
     console.log('The lambda function finished successfully.');
     return resp;
 };
