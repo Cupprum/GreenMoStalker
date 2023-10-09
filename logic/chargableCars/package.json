@@ -5,7 +5,7 @@
         "@aws-sdk/client-ssm": "^3.427.0",
         "axios": "^1.5.1",
         "form-data-encoder": "^2.1.4",
-        "formdata-node": "^5.0.0"
+        "formdata-node": "^5.0.1"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.111",
