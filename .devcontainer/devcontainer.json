@@ -1,4 +1,7 @@
 {
     "image": "mcr.microsoft.com/devcontainers/universal:2",
+    "ghcr.io/devcontainers/features/node:1": {
+        "version": "18"
+    },
     "onCreateCommand": ["nvm", "use", "18"]
 }
