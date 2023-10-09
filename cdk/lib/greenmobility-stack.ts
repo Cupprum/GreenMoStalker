@@ -118,7 +118,6 @@ class GreenMoApi extends apigw.RestApi {
     public addLambda(func: lambda.Function, method: string, path: string) {
         const integration = new apigw.LambdaIntegration(func);
 
-
         const route = this.root.addResource(path);
         route.addMethod(method, integration, { apiKeyRequired: true });
     }
