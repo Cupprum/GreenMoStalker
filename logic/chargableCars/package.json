@@ -8,7 +8,7 @@
         "formdata-node": "^5.0.0"
     },
     "devDependencies": {
-        "@types/aws-lambda": "^8.10.111",
+        "@types/aws-lambda": "^8.10.124",
         "@types/jest": "^29.4.0",
         "@types/node": "^20.8.3",
         "aws-lambda": "1.0.7",
