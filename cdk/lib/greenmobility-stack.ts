@@ -58,7 +58,7 @@ export class GreenMobility extends cdk.Stack {
         const func = new lambda.Function(this, 'chargableCarsLambda', {
             functionName: 'chargableCarsLambda',
             code: code,
-            handler: 'index.handler',
+            handler: 'lib.index.handler',
             runtime: lambda.Runtime.NODEJS_18_X,
             timeout: cdk.Duration.seconds(15),
         });
