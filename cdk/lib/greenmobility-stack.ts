@@ -18,11 +18,13 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                         `
                             cd ${path}
                             npm install
-                            npx tsc --outDir ${outputDir}
-                            cp ${path}/package.json ${outputDir}
-                            cp ${path}/package-lock.json ${outputDir}
-                            cd ${outputDir}
-                            npm install
+                            npx esbuild lib/index.ts \
+                                --bundle \
+                                --minify \
+                                --sourcemap \
+                                --platform=node \
+                                --target=es2020 \
+                                --outfile=${outputDir}/index.js
                         `,
                         { stdio: 'inherit' }
                     );
@@ -58,7 +60,7 @@ export class GreenMobility extends cdk.Stack {
         const func = new lambda.Function(this, 'chargableCarsLambda', {
             functionName: 'chargableCarsLambda',
             code: code,
-            handler: 'lib.index.handler',
+            handler: 'index.handler',
             runtime: lambda.Runtime.NODEJS_18_X,
             timeout: cdk.Duration.seconds(15),
         });
