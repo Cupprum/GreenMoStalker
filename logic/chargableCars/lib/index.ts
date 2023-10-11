@@ -188,7 +188,6 @@ export const handler = async (
         const msg = 'No cars for charging were found.';
         console.log(msg);
 
-        // TODO: i dont think the 'no cars were found works'.
         resp = { statusCode: 200, body: msg };
     } else {
         console.log('Cars for charging were found.');
