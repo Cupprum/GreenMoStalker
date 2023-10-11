@@ -5,9 +5,9 @@ updates:
   - package-ecosystem: "npm"
     directory: "cdk"
     schedule:
-      interval: "daily"
+      interval: "monthly"
 
   - package-ecosystem: "npm"
     directory: "logic/chargableCars"
     schedule:
-      interval: "daily"
+      interval: "monthly"
