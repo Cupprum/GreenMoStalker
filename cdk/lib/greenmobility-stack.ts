@@ -18,7 +18,7 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                         `
                             cd ${path}
                             npm install
-                            npx tsc --outDir ${outputDir} ${path}/index.ts
+                            npx tsc --outDir ${outputDir}
                             cp ${path}/package.json ${outputDir}
                             cp ${path}/package-lock.json ${outputDir}
                             cd ${outputDir}
@@ -117,7 +117,6 @@ class GreenMoApi extends apigw.RestApi {
     // Wrapper function to add lambda to apigateway path.
     public addLambda(func: lambda.Function, method: string, path: string) {
         const integration = new apigw.LambdaIntegration(func);
-
 
         const route = this.root.addResource(path);
         route.addMethod(method, integration, { apiKeyRequired: true });

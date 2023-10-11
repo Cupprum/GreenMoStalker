@@ -3,8 +3,6 @@
         "husky": "^8.0.3"
     },
     "devDependencies": {
-        "cdk": "file:cdk",
-        "chargablecars": "file:logic/chargableCars",
         "prettier": "^2.8.0",
         "pretty-quick": "^3.1.3"
     },
