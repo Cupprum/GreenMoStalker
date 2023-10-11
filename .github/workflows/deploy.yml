@@ -3,7 +3,11 @@ name: GreenMo Stalker deployment
 on:
     workflow_dispatch:
     push:
-        branches: ['master']
+        branches: 
+            - 'master'
+        paths:
+            - 'cdk'
+            - 'logic'
 
 env:
     AWS_REGION: ${{ vars.AWS_REGION }}
