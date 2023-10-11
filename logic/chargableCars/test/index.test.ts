@@ -3,7 +3,7 @@ import {
     executeGreenMoRequest,
     executeMapsRequest,
     transformImage,
-} from './index';
+} from '../lib/index';
 
 import axios from 'axios';
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
