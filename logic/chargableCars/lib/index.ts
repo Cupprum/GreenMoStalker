@@ -173,7 +173,13 @@ export const handler = async (
     let carPositions: Position[];
     try {
         const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
-        carPositions = await executeGreenMoRequest(greenMoParams, 40);
+        const desiredFuelLevel = parameters[
+            'desiredFuelLevel'
+        ] as unknown as number;
+        carPositions = await executeGreenMoRequest(
+            greenMoParams,
+            desiredFuelLevel
+        );
     } catch (error) {
         console.error('Failed fetching cars for charging.');
         console.log(error);
