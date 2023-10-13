@@ -74,7 +74,6 @@ export async function executeGreenMoRequest(
 
     const result = response.data as Car[];
 
-    // TODO: change this to parameter, probably a header
     return result.filter((car: Car) => car.fuelLevel <= desiredFuelLevel);
 }
 
