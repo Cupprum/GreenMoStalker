@@ -54,7 +54,8 @@ function calculateCenter(topLeft: Position, bottomRight: Position): Position {
 }
 
 export async function executeGreenMoRequest(
-    parameters: string
+    parameters: string,
+    desiredFuelLevel: number
 ): Promise<Car[]> {
     const protocol = 'https';
     const hostname = 'greenmobility.frontend.fleetbird.eu';
@@ -74,7 +75,7 @@ export async function executeGreenMoRequest(
     const result = response.data as Car[];
 
     // TODO: change this to parameter, probably a header
-    return result.filter((car: Car) => car.fuelLevel <= 40);
+    return result.filter((car: Car) => car.fuelLevel <= desiredFuelLevel);
 }
 
 async function generateMapsParameters(
@@ -143,11 +144,8 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
     console.log('The lambda function execution start.');
 
-    console.log(`Event: ${event}`);
-    console.log('----end---');
-    console.log(event); // TODO: Verify why i do not have a string here
-    console.log('----end---');
-    console.log(context); // TODO: Verify why i do not have a string here
+    console.log(`Event: ${JSON.stringify(event)}`);
+    console.log(`Context: ${JSON.stringify(context)}`);
 
     console.log('Parse possitions from query string parameters.');
     const parameters = event.queryStringParameters;
@@ -175,7 +173,13 @@ export const handler = async (
     let carPositions: Position[];
     try {
         const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
-        carPositions = await executeGreenMoRequest(greenMoParams);
+        const desiredFuelLevel = parameters[
+            'desiredFuelLevel'
+        ] as unknown as number;
+        carPositions = await executeGreenMoRequest(
+            greenMoParams,
+            desiredFuelLevel
+        );
     } catch (error) {
         console.error('Failed fetching cars for charging.');
         console.log(error);

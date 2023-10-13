@@ -46,7 +46,7 @@ describe('when request is received', () => {
         const pos1 = { lat: 1.123456, lon: 2.123456 };
         const pos2 = { lat: 3.123456, lon: 4.123456 };
         const params = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
-        await executeGreenMoRequest(params).then((data) =>
+        await executeGreenMoRequest(params, 40).then((data) =>
             expect(data).toEqual([car1])
         );
     });
