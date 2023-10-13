@@ -144,11 +144,8 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
     console.log('The lambda function execution start.');
 
-    console.log(`Event: ${event}`);
-    console.log('----end---');
-    console.log(event); // TODO: Verify why i do not have a string here
-    console.log('----end---');
-    console.log(context); // TODO: Verify why i do not have a string here
+    console.log(`Event: ${JSON.stringify(event)}`);
+    console.log(`Context: ${JSON.stringify(context)}`);
 
     console.log('Parse possitions from query string parameters.');
     const parameters = event.queryStringParameters;
