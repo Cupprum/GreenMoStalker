@@ -8,6 +8,7 @@ on:
     paths:
       - 'cdk'
       - 'logic'
+      - '.github/workflows'
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
