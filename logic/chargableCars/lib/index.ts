@@ -10,11 +10,22 @@ import axios from 'axios';
 class ParseError extends Error {}
 class NetworkingError extends Error {}
 
+// TODO: make lat and lon extend position, this is a bit dangerous
 interface Car {
     carId: number;
     lat: number;
     lon: number;
     fuelLevel: number;
+}
+
+interface Charger {
+    properties: {
+        id: string;
+        numOfAvailableConnectors: number;
+    };
+    geometry: {
+        coordinates: [number, number];
+    };
 }
 
 type Position = {
@@ -77,9 +88,49 @@ export async function executeGreenMoRequest(
     return result.filter((car: Car) => car.fuelLevel <= desiredFuelLevel);
 }
 
+export async function executeSpiriiRequest(
+    parameters: string
+): Promise<Position[]> {
+    const protocol = 'https';
+    const hostname = 'app.spirii.dk';
+    const endpoint = 'api/clusters';
+
+    const url = `${protocol}://${hostname}/${endpoint}/?${parameters}`;
+
+    console.log(`Execute HTTP request against: ${url}.`);
+    const response = await axios.get(url, {
+        headers: {
+            appversion: '3.6.1',
+        },
+    });
+
+    const expectedStatusCode = 200;
+    if (response.status != expectedStatusCode) {
+        const msg = `Invalid response code - Spirii. Got ${response.status}, expected ${expectedStatusCode}`;
+        throw new NetworkingError(msg);
+    }
+
+    const result = response.data as Charger[];
+    const filtered = result.filter((charger: Charger) => {
+        console.log(charger.properties.numOfAvailableConnectors);
+        console.log(charger.properties.numOfAvailableConnectors > 0);
+        return charger.properties.numOfAvailableConnectors > 0;
+    });
+
+    return filtered.map((charger) => {
+        return {
+            lat: charger.geometry.coordinates[1],
+            lon: charger.geometry.coordinates[0],
+        };
+    });
+}
+
 async function generateMapsParameters(
     centerPosition: Position,
-    carPositions: Position[]
+    positions: {
+        carPositions: Position[];
+        chargerPositions: Position[];
+    }
 ): Promise<string> {
     const arr: string[] = [];
 
@@ -89,8 +140,18 @@ async function generateMapsParameters(
     arr.push(`center=lonlat:${centerPosition.lon},${centerPosition.lat}`);
     arr.push('zoom=14');
 
-    const pins = carPositions.map(
-        (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`
+    let pins: string[] = [];
+    pins.push(
+        ...positions.carPositions.map(
+            // The color is in hex format, the %23 is for hashtag...
+            (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`
+        )
+    );
+    pins.push(
+        ...positions.chargerPositions.map(
+            // The color is in hex format, the %23 is for hashtag...
+            (pos) => `lonlat:${pos.lon},${pos.lat};color:%23f30e0e;size:medium`
+        )
     );
     arr.push(`marker=${pins.join('|')}`);
 
@@ -100,7 +161,10 @@ async function generateMapsParameters(
 
 export async function executeMapsRequest(
     centerPos: Position,
-    positions: Position[]
+    positions: {
+        carPositions: Position[];
+        chargerPositions: Position[];
+    }
 ): Promise<ArrayBuffer> {
     const protocol = 'https';
     const hostname = 'maps.geoapify.com';
@@ -171,6 +235,7 @@ export const handler = async (
     console.log('Fetch cars in desired location.');
     let carPositions: Position[];
     try {
+        // TODO: is there a way to change this into a dictonary?
         const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
         const desiredFuelLevel = parameters[
             'desiredFuelLevel'
@@ -181,6 +246,23 @@ export const handler = async (
         );
     } catch (error) {
         console.error('Failed fetching cars for charging.');
+        console.log(error);
+        if (error instanceof NetworkingError) {
+            return errResponse(403, error.message);
+        } else {
+            return errResponse(500, 'unknown exception');
+        }
+    }
+
+    // TODO: execute concurently with getting positions of cars.
+    console.log('Fetch chargers in desired location.');
+    let chargerPositions: Position[];
+    try {
+        // TODO: is there a way to turn this into a dictionary?
+        const spiriiParams = `boundsNe=${pos1.lat}%2C${pos2.lon}&boundsSw=${pos2.lat}%2C${pos1.lon}`;
+        chargerPositions = await executeSpiriiRequest(spiriiParams);
+    } catch (error) {
+        console.error('Failed fetching charger locations.');
         console.log(error);
         if (error instanceof NetworkingError) {
             return errResponse(403, error.message);
@@ -202,7 +284,10 @@ export const handler = async (
         const centerPos = calculateCenter(pos1, pos2);
         let img: ArrayBuffer;
         try {
-            img = await executeMapsRequest(centerPos, carPositions);
+            img = await executeMapsRequest(centerPos, {
+                carPositions,
+                chargerPositions,
+            });
         } catch (error) {
             console.error('Generating map failed.');
             console.log(error);
