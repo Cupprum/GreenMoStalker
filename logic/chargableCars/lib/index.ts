@@ -237,12 +237,13 @@ export const handler = async (
     try {
         // TODO: is there a way to change this into a dictonary?
         const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
+        // TODO: verify this in a better way, the unkown is not supposed to be there
         const desiredFuelLevel = parameters[
             'desiredFuelLevel'
         ] as unknown as number;
         carPositions = await executeGreenMoRequest(
             greenMoParams,
-            desiredFuelLevel
+            desiredFuelLevel ? desiredFuelLevel : 40
         );
     } catch (error) {
         console.error('Failed fetching cars for charging.');
@@ -259,7 +260,7 @@ export const handler = async (
     let chargerPositions: Position[];
     try {
         // TODO: is there a way to turn this into a dictionary?
-        const spiriiParams = `boundsNe=${pos1.lat}%2C${pos2.lon}&boundsSw=${pos2.lat}%2C${pos1.lon}`;
+        const spiriiParams = `zoom=22&boundsNe=${pos1.lat}%2C${pos2.lon}&boundsSw=${pos2.lat}%2C${pos1.lon}`;
         chargerPositions = await executeSpiriiRequest(spiriiParams);
     } catch (error) {
         console.error('Failed fetching charger locations.');
