@@ -260,6 +260,8 @@ export const handler = async (
     let chargerPositions: Position[];
     try {
         // TODO: is there a way to turn this into a dictionary?
+        // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
+        // %2C is a separator between the latitude and longitude.
         const spiriiParams = `zoom=22&boundsNe=${pos1.lat}%2C${pos2.lon}&boundsSw=${pos2.lat}%2C${pos1.lon}`;
         chargerPositions = await executeSpiriiRequest(spiriiParams);
     } catch (error) {
