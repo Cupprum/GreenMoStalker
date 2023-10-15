@@ -1,12 +1,9 @@
 import { PositionQuery, Position } from './PositionQuery';
 
-// TODO: import lat and lon from somewhere
-type Car = {
+interface Car extends Position {
     carId: number;
     fuelLevel: number;
-    lat: number;
-    lon: number;
-};
+}
 
 export class GreenMo extends PositionQuery<Car> {
     protocol = 'https';
