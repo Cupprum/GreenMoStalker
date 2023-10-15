@@ -46,7 +46,12 @@ describe('when request is received', () => {
 
         const pos1 = { lat: 1.123456, lon: 2.123456 };
         const pos2 = { lat: 3.123456, lon: 4.123456 };
-        const params = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
+        const params = {
+            lon1: `${pos1.lon}`,
+            lat1: `${pos1.lat}`,
+            lon2: `${pos2.lon}`,
+            lat2: `${pos2.lat}`,
+        };
         const cars = await executeGreenMoRequest(params, 40);
         expect(cars).toEqual([car1]);
     });
@@ -77,7 +82,11 @@ describe('when request is received', () => {
 
         const pos1 = { lat: 1.123456, lon: 2.123456 };
         const pos2 = { lat: 3.123456, lon: 4.123456 };
-        const params = `boundsNe=${pos1.lat}%2C${pos2.lon}&boundsSw=${pos2.lat}%2C${pos1.lon}`;
+        const params = {
+            zoom: '22',
+            boundsNe: `${pos1.lat},${pos2.lon}`,
+            boundsSw: `${pos2.lat},${pos1.lon}`,
+        };
 
         const chargers = await executeSpiriiRequest(params);
         expect(chargers).toEqual([pos1]);

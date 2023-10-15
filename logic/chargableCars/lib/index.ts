@@ -10,11 +10,8 @@ import axios from 'axios';
 class ParseError extends Error {}
 class NetworkingError extends Error {}
 
-// TODO: make lat and lon extend position, this is a bit dangerous
-interface Car {
+interface Car extends Position {
     carId: number;
-    lat: number;
-    lon: number;
     fuelLevel: number;
 }
 
@@ -65,17 +62,17 @@ function calculateCenter(topLeft: Position, bottomRight: Position): Position {
 }
 
 export async function executeGreenMoRequest(
-    parameters: string,
+    params: { [param: string]: string },
     desiredFuelLevel: number
-): Promise<Car[]> {
+): Promise<Position[]> {
     const protocol = 'https';
     const hostname = 'greenmobility.frontend.fleetbird.eu';
     const endpoint = 'api/prod/v1.06/map/cars';
 
-    const url = `${protocol}://${hostname}/${endpoint}/?${parameters}`;
+    const url = `${protocol}://${hostname}/${endpoint}`;
 
     console.log(`Execute HTTP request against: ${url}.`);
-    const response = await axios.get(url);
+    const response = await axios.get(url, { params: params });
 
     const expectedStatusCode = 200;
     if (response.status != expectedStatusCode) {
@@ -88,20 +85,21 @@ export async function executeGreenMoRequest(
     return result.filter((car: Car) => car.fuelLevel <= desiredFuelLevel);
 }
 
-export async function executeSpiriiRequest(
-    parameters: string
-): Promise<Position[]> {
+export async function executeSpiriiRequest(params: {
+    [param: string]: string;
+}): Promise<Position[]> {
     const protocol = 'https';
     const hostname = 'app.spirii.dk';
     const endpoint = 'api/clusters';
 
-    const url = `${protocol}://${hostname}/${endpoint}/?${parameters}`;
+    const url = `${protocol}://${hostname}/${endpoint}`;
 
     console.log(`Execute HTTP request against: ${url}.`);
     const response = await axios.get(url, {
         headers: {
             appversion: '3.6.1',
         },
+        params: params,
     });
 
     const expectedStatusCode = 200;
@@ -112,8 +110,6 @@ export async function executeSpiriiRequest(
 
     const result = response.data as Charger[];
     const filtered = result.filter((charger: Charger) => {
-        console.log(charger.properties.numOfAvailableConnectors);
-        console.log(charger.properties.numOfAvailableConnectors > 0);
         return charger.properties.numOfAvailableConnectors > 0;
     });
 
@@ -235,8 +231,12 @@ export const handler = async (
     console.log('Fetch cars in desired location.');
     let carPositions: Position[];
     try {
-        // TODO: is there a way to change this into a dictonary?
-        const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
+        const greenMoParams = {
+            lon1: `${pos1.lon}`,
+            lat1: `${pos1.lat}`,
+            lon2: `${pos2.lon}`,
+            lat2: `${pos2.lat}`,
+        };
         // TODO: verify this in a better way, the unkown is not supposed to be there
         const desiredFuelLevel = parameters[
             'desiredFuelLevel'
@@ -259,10 +259,12 @@ export const handler = async (
     console.log('Fetch chargers in desired location.');
     let chargerPositions: Position[];
     try {
-        // TODO: is there a way to turn this into a dictionary?
         // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
-        // %2C is a separator between the latitude and longitude.
-        const spiriiParams = `zoom=22&boundsNe=${pos1.lat}%2C${pos2.lon}&boundsSw=${pos2.lat}%2C${pos1.lon}`;
+        const spiriiParams = {
+            zoom: '22',
+            boundsNe: `${pos1.lat},${pos2.lon}`,
+            boundsSw: `${pos2.lat},${pos1.lon}`,
+        };
         chargerPositions = await executeSpiriiRequest(spiriiParams);
     } catch (error) {
         console.error('Failed fetching charger locations.');
