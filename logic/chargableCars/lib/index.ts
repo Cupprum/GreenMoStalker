@@ -7,12 +7,11 @@ import {
 } from 'aws-lambda';
 import axios from 'axios';
 
-import { Position } from './query/PositionQuery';
+import { Position, NetworkingError } from './query/PositionQuery';
 import { GreenMo } from './query/GreenMo';
 import { Spirii } from './query/Spirii';
 
 class ParseError extends Error {}
-class NetworkingError extends Error {}
 
 export function parsePositions(
     parameters: APIGatewayProxyEventQueryStringParameters
