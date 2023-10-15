@@ -152,7 +152,7 @@ export const handler = async (
     console.log('Positions successfully parsed.');
 
     console.log('Fetch cars in desired location.');
-    let carPositions: Position[];
+    let carPositionsPromise: Promise<Position[]>;
     try {
         const greenMoParams = {
             lon1: `${pos1.lon}`,
@@ -164,7 +164,7 @@ export const handler = async (
             ? parseInt(parameters['desiredFuelLevel'])
             : 40;
         const greenMo = new GreenMo(desiredFuelLevel);
-        carPositions = await greenMo.query(greenMoParams);
+        carPositionsPromise = greenMo.query(greenMoParams);
     } catch (error) {
         console.error('Failed fetching cars for charging.');
         console.log(error);
@@ -175,9 +175,8 @@ export const handler = async (
         }
     }
 
-    // TODO: execute concurently with getting positions of cars.
     console.log('Fetch chargers in desired location.');
-    let chargerPositions: Position[];
+    let chargerPositionsPromise: Promise<Position[]>;
     try {
         // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
         const spiriiParams = {
@@ -186,7 +185,7 @@ export const handler = async (
             boundsSw: `${pos2.lat},${pos1.lon}`,
         };
         const spirii = new Spirii();
-        chargerPositions = await spirii.query(spiriiParams);
+        chargerPositionsPromise = spirii.query(spiriiParams);
         // TODO: decide what to do when there are not 0 free chargers in proximity.
     } catch (error) {
         console.error('Failed fetching charger locations.');
@@ -197,6 +196,12 @@ export const handler = async (
             return errResponse(500, 'unknown exception');
         }
     }
+
+    // The GreenMo and Spirii requests are executed asynchronously.
+    let [carPositions, chargerPositions] = await Promise.all([
+        carPositionsPromise,
+        chargerPositionsPromise,
+    ]);
 
     let resp: APIGatewayProxyResult;
     if (carPositions.length == 0) {
