@@ -1,10 +1,10 @@
 import {
     parsePositions,
-    executeGreenMoRequest,
-    executeSpiriiRequest,
     executeMapsRequest,
     transformImage,
 } from '../lib/index';
+import { GreenMo } from '../lib/query/GreenMo';
+import { Spirii } from '../lib/query/Spirii';
 
 import axios from 'axios';
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
@@ -52,7 +52,8 @@ describe('when request is received', () => {
             lon2: `${pos2.lon}`,
             lat2: `${pos2.lat}`,
         };
-        const cars = await executeGreenMoRequest(params, 40);
+        const greenMo = new GreenMo(40);
+        const cars = await greenMo.query(params);
         expect(cars).toEqual([car1]);
     });
 
@@ -88,7 +89,8 @@ describe('when request is received', () => {
             boundsSw: `${pos2.lat},${pos1.lon}`,
         };
 
-        const chargers = await executeSpiriiRequest(params);
+        const spirii = new Spirii();
+        const chargers = await spirii.query(params);
         expect(chargers).toEqual([pos1]);
     });
 

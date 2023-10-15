@@ -7,28 +7,12 @@ import {
 } from 'aws-lambda';
 import axios from 'axios';
 
+import { Position } from './query/PositionQuery';
+import { GreenMo } from './query/GreenMo';
+import { Spirii } from './query/Spirii';
+
 class ParseError extends Error {}
 class NetworkingError extends Error {}
-
-interface Car extends Position {
-    carId: number;
-    fuelLevel: number;
-}
-
-interface Charger {
-    properties: {
-        id: string;
-        numOfAvailableConnectors: number;
-    };
-    geometry: {
-        coordinates: [number, number];
-    };
-}
-
-type Position = {
-    lat: number;
-    lon: number;
-};
 
 export function parsePositions(
     parameters: APIGatewayProxyEventQueryStringParameters
@@ -59,66 +43,6 @@ function calculateCenter(topLeft: Position, bottomRight: Position): Position {
         lat: (topLeft.lat + bottomRight.lat) / 2,
         lon: (topLeft.lon + bottomRight.lon) / 2,
     };
-}
-
-export async function executeGreenMoRequest(
-    params: { [param: string]: string },
-    desiredFuelLevel: number
-): Promise<Position[]> {
-    const protocol = 'https';
-    const hostname = 'greenmobility.frontend.fleetbird.eu';
-    const endpoint = 'api/prod/v1.06/map/cars';
-
-    const url = `${protocol}://${hostname}/${endpoint}`;
-
-    console.log(`Execute HTTP request against: ${url}.`);
-    const response = await axios.get(url, { params: params });
-
-    const expectedStatusCode = 200;
-    if (response.status != expectedStatusCode) {
-        const msg = `Invalid response code - GreenMo. Got ${response.status}, expected ${expectedStatusCode}`;
-        throw new NetworkingError(msg);
-    }
-
-    const result = response.data as Car[];
-
-    return result.filter((car: Car) => car.fuelLevel <= desiredFuelLevel);
-}
-
-export async function executeSpiriiRequest(params: {
-    [param: string]: string;
-}): Promise<Position[]> {
-    const protocol = 'https';
-    const hostname = 'app.spirii.dk';
-    const endpoint = 'api/clusters';
-
-    const url = `${protocol}://${hostname}/${endpoint}`;
-
-    console.log(`Execute HTTP request against: ${url}.`);
-    const response = await axios.get(url, {
-        headers: {
-            appversion: '3.6.1',
-        },
-        params: params,
-    });
-
-    const expectedStatusCode = 200;
-    if (response.status != expectedStatusCode) {
-        const msg = `Invalid response code - Spirii. Got ${response.status}, expected ${expectedStatusCode}`;
-        throw new NetworkingError(msg);
-    }
-
-    const result = response.data as Charger[];
-    const filtered = result.filter((charger: Charger) => {
-        return charger.properties.numOfAvailableConnectors > 0;
-    });
-
-    return filtered.map((charger) => {
-        return {
-            lat: charger.geometry.coordinates[1],
-            lon: charger.geometry.coordinates[0],
-        };
-    });
 }
 
 async function generateMapsParameters(
@@ -240,10 +164,8 @@ export const handler = async (
         const desiredFuelLevel = parameters['desiredFuelLevel']
             ? parseInt(parameters['desiredFuelLevel'])
             : 40;
-        carPositions = await executeGreenMoRequest(
-            greenMoParams,
-            desiredFuelLevel
-        );
+        const greenMo = new GreenMo(desiredFuelLevel);
+        carPositions = await greenMo.query(greenMoParams);
     } catch (error) {
         console.error('Failed fetching cars for charging.');
         console.log(error);
@@ -264,7 +186,8 @@ export const handler = async (
             boundsNe: `${pos1.lat},${pos2.lon}`,
             boundsSw: `${pos2.lat},${pos1.lon}`,
         };
-        chargerPositions = await executeSpiriiRequest(spiriiParams);
+        const spirii = new Spirii();
+        chargerPositions = await spirii.query(spiriiParams);
         // TODO: decide what to do when there are not 0 free chargers in proximity.
     } catch (error) {
         console.error('Failed fetching charger locations.');

@@ -18,7 +18,7 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                         `
                             cd ${path}
                             npm install
-                            npx esbuild lib/index.ts \
+                            npx esbuild lib/*.ts \
                                 --bundle \
                                 --minify \
                                 --sourcemap \
