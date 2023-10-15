@@ -7,20 +7,11 @@ import {
 } from 'aws-lambda';
 import axios from 'axios';
 
+import { Position, NetworkingError } from './query/PositionQuery';
+import { GreenMo } from './query/GreenMo';
+import { Spirii } from './query/Spirii';
+
 class ParseError extends Error {}
-class NetworkingError extends Error {}
-
-interface Car {
-    carId: number;
-    lat: number;
-    lon: number;
-    fuelLevel: number;
-}
-
-type Position = {
-    lat: number;
-    lon: number;
-};
 
 export function parsePositions(
     parameters: APIGatewayProxyEventQueryStringParameters
@@ -53,34 +44,12 @@ function calculateCenter(topLeft: Position, bottomRight: Position): Position {
     };
 }
 
-export async function executeGreenMoRequest(
-    parameters: string,
-    desiredFuelLevel: number
-): Promise<Car[]> {
-    const protocol = 'https';
-    const hostname = 'greenmobility.frontend.fleetbird.eu';
-    const endpoint = 'api/prod/v1.06/map/cars';
-
-    const url = `${protocol}://${hostname}/${endpoint}/?${parameters}`;
-
-    console.log(`Execute HTTP request against: ${url}.`);
-    const response = await axios.get(url);
-
-    const expectedStatusCode = 200;
-    if (response.status != expectedStatusCode) {
-        const msg = `Invalid response code - GreenMo. Got ${response.status}, expected ${expectedStatusCode}`;
-        throw new NetworkingError(msg);
-    }
-
-    const result = response.data as Car[];
-
-    // TODO: change this to parameter, probably a header
-    return result.filter((car: Car) => car.fuelLevel <= desiredFuelLevel);
-}
-
 async function generateMapsParameters(
     centerPosition: Position,
-    carPositions: Position[]
+    positions: {
+        carPositions: Position[];
+        chargerPositions: Position[];
+    }
 ): Promise<string> {
     const arr: string[] = [];
 
@@ -90,8 +59,18 @@ async function generateMapsParameters(
     arr.push(`center=lonlat:${centerPosition.lon},${centerPosition.lat}`);
     arr.push('zoom=14');
 
-    const pins = carPositions.map(
-        (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`
+    let pins: string[] = [];
+    pins.push(
+        ...positions.carPositions.map(
+            // The color is in hex format, the %23 is for hashtag...
+            (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`
+        )
+    );
+    pins.push(
+        ...positions.chargerPositions.map(
+            // The color is in hex format, the %23 is for hashtag...
+            (pos) => `lonlat:${pos.lon},${pos.lat};color:%23f30e0e;size:medium`
+        )
     );
     arr.push(`marker=${pins.join('|')}`);
 
@@ -101,7 +80,10 @@ async function generateMapsParameters(
 
 export async function executeMapsRequest(
     centerPos: Position,
-    positions: Position[]
+    positions: {
+        carPositions: Position[];
+        chargerPositions: Position[];
+    }
 ): Promise<ArrayBuffer> {
     const protocol = 'https';
     const hostname = 'maps.geoapify.com';
@@ -172,16 +154,42 @@ export const handler = async (
     console.log('Fetch cars in desired location.');
     let carPositions: Position[];
     try {
-        const greenMoParams = `lon1=${pos1.lon}&lat1=${pos1.lat}&lon2=${pos2.lon}&lat2=${pos2.lat}`;
-        const desiredFuelLevel = parameters[
-            'desiredFuelLevel'
-        ] as unknown as number;
-        carPositions = await executeGreenMoRequest(
-            greenMoParams,
-            desiredFuelLevel
-        );
+        const greenMoParams = {
+            lon1: `${pos1.lon}`,
+            lat1: `${pos1.lat}`,
+            lon2: `${pos2.lon}`,
+            lat2: `${pos2.lat}`,
+        };
+        const desiredFuelLevel = parameters['desiredFuelLevel']
+            ? parseInt(parameters['desiredFuelLevel'])
+            : 40;
+        const greenMo = new GreenMo(desiredFuelLevel);
+        carPositions = await greenMo.query(greenMoParams);
     } catch (error) {
         console.error('Failed fetching cars for charging.');
+        console.log(error);
+        if (error instanceof NetworkingError) {
+            return errResponse(403, error.message);
+        } else {
+            return errResponse(500, 'unknown exception');
+        }
+    }
+
+    // TODO: execute concurently with getting positions of cars.
+    console.log('Fetch chargers in desired location.');
+    let chargerPositions: Position[];
+    try {
+        // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
+        const spiriiParams = {
+            zoom: '22',
+            boundsNe: `${pos1.lat},${pos2.lon}`,
+            boundsSw: `${pos2.lat},${pos1.lon}`,
+        };
+        const spirii = new Spirii();
+        chargerPositions = await spirii.query(spiriiParams);
+        // TODO: decide what to do when there are not 0 free chargers in proximity.
+    } catch (error) {
+        console.error('Failed fetching charger locations.');
         console.log(error);
         if (error instanceof NetworkingError) {
             return errResponse(403, error.message);
@@ -203,7 +211,10 @@ export const handler = async (
         const centerPos = calculateCenter(pos1, pos2);
         let img: ArrayBuffer;
         try {
-            img = await executeMapsRequest(centerPos, carPositions);
+            img = await executeMapsRequest(centerPos, {
+                carPositions,
+                chargerPositions,
+            });
         } catch (error) {
             console.error('Generating map failed.');
             console.log(error);
