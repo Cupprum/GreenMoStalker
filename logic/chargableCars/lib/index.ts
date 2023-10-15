@@ -185,8 +185,8 @@ export const handler = async (
             boundsSw: `${pos2.lat},${pos1.lon}`,
         };
         const spirii = new Spirii();
-        chargerPositionsPromise = spirii.query(spiriiParams);
         // TODO: decide what to do when there are not 0 free chargers in proximity.
+        chargerPositionsPromise = spirii.query(spiriiParams);
     } catch (error) {
         console.error('Failed fetching charger locations.');
         console.log(error);
