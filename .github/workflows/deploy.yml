@@ -6,9 +6,9 @@ on:
     branches:
       - 'master'
     paths:
-      - 'cdk'
-      - 'logic'
-      - '.github/workflows'
+      - '/cdk'
+      - '/logic'
+      - '/.github/workflows'
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
