@@ -237,13 +237,12 @@ export const handler = async (
             lon2: `${pos2.lon}`,
             lat2: `${pos2.lat}`,
         };
-        // TODO: verify this in a better way, the unkown is not supposed to be there
-        const desiredFuelLevel = parameters[
-            'desiredFuelLevel'
-        ] as unknown as number;
+        const desiredFuelLevel = parameters['desiredFuelLevel']
+            ? parseInt(parameters['desiredFuelLevel'])
+            : 40;
         carPositions = await executeGreenMoRequest(
             greenMoParams,
-            desiredFuelLevel ? desiredFuelLevel : 40
+            desiredFuelLevel
         );
     } catch (error) {
         console.error('Failed fetching cars for charging.');
@@ -266,6 +265,7 @@ export const handler = async (
             boundsSw: `${pos2.lat},${pos1.lon}`,
         };
         chargerPositions = await executeSpiriiRequest(spiriiParams);
+        // TODO: decide what to do when there are not 0 free chargers in proximity.
     } catch (error) {
         console.error('Failed fetching charger locations.');
         console.log(error);
