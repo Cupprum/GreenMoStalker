@@ -8,7 +8,8 @@
         "aws-cdk-lib": "^2.100.0",
         "chargablecars": "file:../logic/chargableCars",
         "constructs": "^10.3.0",
-        "source-map-support": "^0.5.21"
+        "source-map-support": "^0.5.21",
+        "ts-node": "^10.9.1"
     },
     "devDependencies": {
         "@types/jest": "^29.5.5",
