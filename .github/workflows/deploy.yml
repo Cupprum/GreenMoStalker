@@ -21,11 +21,21 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
       - name: Dagger for GitHub
         uses: dagger/dagger-for-github@v4.0.0
         with:
-          cmds: "run node --loader ts-node/esm ./build.mts"
-          workdir: 'ci'
+          install-only: true
+
+      - run: npm i
+        name: install
+        working-directory: ci
+      - run: npm run dagger
+        name: dagger
+        working-directory: ci
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
