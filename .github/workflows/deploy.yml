@@ -25,11 +25,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - name: Dagger for GitHub
-        uses: dagger/dagger-for-github@v4.0.0
-        with:
-          install-only: true
-
+      - run: curl -L https://dl.dagger.io/dagger/install.sh | sh
+        name: Install Dagger CLI
+        working-directory: /usr/local
       - run: npm i
         name: install
         working-directory: ci
