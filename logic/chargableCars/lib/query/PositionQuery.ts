@@ -24,7 +24,6 @@ export abstract class PositionQuery<Type> {
 
         const expectedStatusCode = 200;
         if (response.status != expectedStatusCode) {
-            // TODO: test the this.constuctor.name
             const msg = `Invalid response code - ${this.constructor.name}. Got ${response.status}, expected ${expectedStatusCode}`;
             throw new NetworkingError(msg);
         }

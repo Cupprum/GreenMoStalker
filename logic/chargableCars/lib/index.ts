@@ -185,7 +185,6 @@ export const handler = async (
             boundsSw: `${pos2.lat},${pos1.lon}`,
         };
         const spirii = new Spirii();
-        // TODO: decide what to do when there are not 0 free chargers in proximity.
         chargerPositionsPromise = spirii.query(spiriiParams);
     } catch (error) {
         console.error('Failed fetching charger locations.');
@@ -204,8 +203,11 @@ export const handler = async (
     ]);
 
     let resp: APIGatewayProxyResult;
-    if (carPositions.length == 0) {
-        const msg = 'No cars for charging were found.';
+    if (carPositions.length == 0 || chargerPositions.length == 0) {
+        let msg = 'No available chargers were found.';
+        if (carPositions.length == 0) {
+            msg = 'No cars for charging were found.';
+        }
         console.log(msg);
 
         resp = { statusCode: 200, body: msg };
