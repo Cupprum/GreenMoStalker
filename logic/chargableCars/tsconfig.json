@@ -10,6 +10,8 @@
         "./lib/index.ts",
         "lib/query/GreenMo.ts",
         "lib/query/Spirii.ts",
-        "./test/index.test.ts"
+        "./test/index.test.ts",
+        "./test/GreenMo.test.ts",
+        "./test/Spirii.test.ts"
     ]
 }

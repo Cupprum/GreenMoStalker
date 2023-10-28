@@ -2,6 +2,7 @@ import {
     parsePositions,
     executeMapsRequest,
     transformImage,
+    handler,
 } from '../lib/index';
 import { GreenMo } from '../lib/query/GreenMo';
 import { Spirii } from '../lib/query/Spirii';
@@ -9,123 +10,146 @@ import { Spirii } from '../lib/query/Spirii';
 import axios from 'axios';
 import { getParameter } from '@aws-lambda-powertools/parameters/ssm';
 
+jest.mock('../lib/query/GreenMo');
+jest.mock('../lib/query/Spirii');
 jest.mock('axios');
 jest.mock('@aws-lambda-powertools/parameters/ssm');
 
-describe('when request is received', () => {
-    test('then the position is parsed from request', () => {
-        const [pos1, pos2] = parsePositions({
-            lat1: '1.123456',
-            lon1: '2.123456',
-            lat2: '3.123456',
-            lon2: '4.123456',
-        });
-
-        expect(pos1).toStrictEqual({ lat: 1.123456, lon: 2.123456 });
-        expect(pos2).toStrictEqual({ lat: 3.123456, lon: 4.123456 });
+test('the position is parsed from request', () => {
+    const [pos1, pos2] = parsePositions({
+        lat1: '1.123456',
+        lon1: '2.123456',
+        lat2: '3.123456',
+        lon2: '4.123456',
     });
 
-    test('the location of chargable cars is fetched', async () => {
-        const car1 = {
-            carId: 1,
-            lat: 1.123456,
-            lon: 2.123456,
-            fuelLevel: 30,
-        };
-        const car2 = {
-            carId: 2,
-            lat: 3.123456,
-            lon: 4.123456,
-            fuelLevel: 50,
-        };
-        const data = [car1, car2];
+    expect(pos1).toStrictEqual({ lat: 1.123456, lon: 2.123456 });
+    expect(pos2).toStrictEqual({ lat: 3.123456, lon: 4.123456 });
+});
 
-        (axios.get as jest.Mock).mockImplementation(() =>
-            Promise.resolve({ status: 200, data: data })
-        );
+test('the image containg a map is generated', async () => {
+    const centerPos = { lat: 1.123456, lon: 1.123456 };
+    const carPositions = [
+        { lat: 1.123456, lon: 2.123456 },
+        { lat: 3.123456, lon: 4.123456 },
+    ];
+    const chargerPositions = [{ lat: 1.123456, lon: 2.123456 }];
 
-        const pos1 = { lat: 1.123456, lon: 2.123456 };
-        const pos2 = { lat: 3.123456, lon: 4.123456 };
-        const params = {
-            lon1: `${pos1.lon}`,
-            lat1: `${pos1.lat}`,
-            lon2: `${pos2.lon}`,
-            lat2: `${pos2.lat}`,
-        };
-        const greenMo = new GreenMo(40);
-        const cars = await greenMo.query(params);
-        expect(cars).toEqual([car1]);
-    });
+    const mockOutput = Buffer.from([0xff, 0xff, 0xff]);
 
-    test('the location of chargers is fetched', async () => {
-        const charger1 = {
-            properties: {
-                numOfAvailableConnectors: 2,
-            },
-            geometry: {
-                coordinates: [2.123456, 1.123456],
-            },
-        };
+    (getParameter as jest.Mock).mockImplementation(() =>
+        Promise.resolve('xxx')
+    );
 
-        const charger2 = {
-            properties: {
-                numOfAvailableConnectors: 0,
-            },
-            geometry: {
-                coordinates: [3.123456, 4.123456],
-            },
-        };
-        const data = [charger1, charger2];
+    (axios.get as jest.Mock).mockImplementation(() =>
+        Promise.resolve({ status: 200, data: mockOutput })
+    );
 
-        (axios.get as jest.Mock).mockImplementation(() =>
-            Promise.resolve({ status: 200, data: data })
-        );
+    await executeMapsRequest(centerPos, {
+        carPositions,
+        chargerPositions,
+    }).then((data) => expect(data).toBe(mockOutput));
+});
 
-        const pos1 = { lat: 1.123456, lon: 2.123456 };
-        const pos2 = { lat: 3.123456, lon: 4.123456 };
-        const params = {
-            zoom: '22',
-            boundsNe: `${pos1.lat},${pos2.lon}`,
-            boundsSw: `${pos2.lat},${pos1.lon}`,
-        };
+test('the image is transformed', () => {
+    const input = Buffer.from([
+        0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
+        0x01, 0x00, 0x00,
+    ]);
 
-        const spirii = new Spirii();
-        const chargers = await spirii.query(params);
-        expect(chargers).toEqual([pos1]);
-    });
+    const transformedImage = transformImage(input);
 
-    test('the image containg a map is generated', async () => {
-        const centerPos = { lat: 1.123456, lon: 1.123456 };
-        const carPositions = [
-            { lat: 1.123456, lon: 2.123456 },
-            { lat: 3.123456, lon: 4.123456 },
-        ];
-        const chargerPositions = [{ lat: 1.123456, lon: 2.123456 }];
+    expect(transformedImage).toBe('/9j/4AAQSkZJRgABAQAA');
+});
 
-        const mockOutput = Buffer.from([0xff, 0xff, 0xff]);
+test('parameters were not specified', async () => {
+    // @ts-expect-error
+    const resp = await handler({}, {});
+    expect(resp.statusCode).toBe(400);
+    expect(resp.body).toBe(
+        JSON.stringify({ message: 'The query string parameters are missing.' })
+    );
+});
 
-        (getParameter as jest.Mock).mockImplementation(() =>
-            Promise.resolve('xxx')
-        );
+test('parameters were specified incorrectly', async () => {
+    const event = {
+        queryStringParameters: {},
+    };
 
-        (axios.get as jest.Mock).mockImplementation(() =>
-            Promise.resolve({ status: 200, data: mockOutput })
-        );
+    // @ts-expect-error
+    const resp = await handler(event, {});
+    expect(resp.statusCode).toBe(400);
+    expect(resp.body).toBe(
+        JSON.stringify({ message: 'The positions are not in a valid format.' })
+    );
+});
 
-        await executeMapsRequest(centerPos, {
-            carPositions,
-            chargerPositions,
-        }).then((data) => expect(data).toBe(mockOutput));
-    });
+test('greenmo didnt find any cars', async () => {
+    const event = {
+        queryStringParameters: {
+            lon1: '1.123456',
+            lat1: '2.123456',
+            lon2: '3.123456',
+            lat2: '4.123456',
+        },
+    };
 
-    test('the image is transformed', () => {
-        const input = Buffer.from([
-            0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00,
-            0x01, 0x01, 0x00, 0x00,
-        ]);
+    jest.spyOn(GreenMo.prototype, 'query').mockImplementation(async () => []);
 
-        const transformedImage = transformImage(input);
+    // @ts-expect-error
+    const resp = await handler(event, {});
+    expect(resp.statusCode).toBe(200);
+    expect(resp.body).toBe('No cars for charging were found.');
+});
 
-        expect(transformedImage).toBe('/9j/4AAQSkZJRgABAQAA');
-    });
+test('spirii didnt find any available chargers', async () => {
+    const event = {
+        queryStringParameters: {
+            lon1: '1.123456',
+            lat1: '2.123456',
+            lon2: '3.123456',
+            lat2: '4.123456',
+            chargers: 'true',
+        },
+    };
+
+    jest.spyOn(GreenMo.prototype, 'query').mockImplementation(async () => [
+        { lat: 1.123, lon: 1.123 },
+    ]);
+    jest.spyOn(Spirii.prototype, 'query').mockImplementation(async () => []);
+
+    // @ts-expect-error
+    const resp = await handler(event, {});
+    expect(resp.statusCode).toBe(200);
+    expect(resp.body).toBe('No available chargers were found.');
+});
+
+test('cars and chargers were found', async () => {
+    const event = {
+        queryStringParameters: {
+            lon1: '1.123456',
+            lat1: '2.123456',
+            lon2: '3.123456',
+            lat2: '4.123456',
+            chargers: 'true',
+        },
+    };
+
+    (axios.get as jest.Mock).mockImplementation(() =>
+        Promise.resolve({ status: 200, data: Buffer.from([]) })
+    );
+
+    jest.spyOn(GreenMo.prototype, 'query').mockImplementation(async () => [
+        { lat: 1.123, lon: 1.123 },
+    ]);
+    jest.spyOn(Spirii.prototype, 'query').mockImplementation(async () => [
+        { lat: 1.123, lon: 1.123 },
+    ]);
+
+    console.log(Date.now());
+    // @ts-expect-error
+    const resp = await handler(event, {});
+    console.log(Date.now());
+    expect(resp.statusCode).toBe(200);
+    expect(resp.body).toBeDefined();
 });
