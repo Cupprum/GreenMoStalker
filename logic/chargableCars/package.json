@@ -15,7 +15,9 @@
         "typescript": "^5.2.2"
     },
     "scripts": {
-        "test": "jest"
+        "test": "jest",
+        "build": "npx esbuild --bundle --platform=node --outfile=out.js ./lib",
+        "run": "node out.js"
     },
     "jest": {
         "preset": "ts-jest"
