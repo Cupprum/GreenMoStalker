@@ -151,6 +151,15 @@ export const handler = async (
     }
     console.log('Positions successfully parsed.');
 
+    console.log('Parse parameters.');
+    const queryChargers = (parameters['chargers'] as string) == 'true';
+    console.log(`chargers: ${queryChargers}`);
+    const desiredFuelLevel = parameters['desiredFuelLevel']
+        ? parseInt(parameters['desiredFuelLevel'])
+        : 40;
+    console.log(`desiredFuelLevel: ${desiredFuelLevel}`);
+    console.log('Parameters parsed.');
+
     console.log('Fetch cars in desired location.');
     let carPositionsPromise: Promise<Position[]>;
     try {
@@ -160,9 +169,6 @@ export const handler = async (
             lon2: `${pos2.lon}`,
             lat2: `${pos2.lat}`,
         };
-        const desiredFuelLevel = parameters['desiredFuelLevel']
-            ? parseInt(parameters['desiredFuelLevel'])
-            : 40;
         const greenMo = new GreenMo(desiredFuelLevel);
         carPositionsPromise = greenMo.query(greenMoParams);
     } catch (error) {
@@ -175,41 +181,52 @@ export const handler = async (
         }
     }
 
-    console.log('Fetch chargers in desired location.');
-    let chargerPositionsPromise: Promise<Position[]>;
-    try {
-        // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
-        const spiriiParams = {
-            zoom: '22',
-            boundsNe: `${pos1.lat},${pos2.lon}`,
-            boundsSw: `${pos2.lat},${pos1.lon}`,
-        };
-        const spirii = new Spirii();
-        chargerPositionsPromise = spirii.query(spiriiParams);
-    } catch (error) {
-        console.error('Failed fetching charger locations.');
-        console.log(error);
-        if (error instanceof NetworkingError) {
-            return errResponse(403, error.message);
-        } else {
-            return errResponse(500, 'unknown exception');
+    let chargerPositionsPromise: Promise<Position[]> | undefined;
+    if (queryChargers) {
+        console.log('Fetch chargers in desired location.');
+        try {
+            // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
+            const spiriiParams = {
+                zoom: '22',
+                boundsNe: `${pos1.lat},${pos2.lon}`,
+                boundsSw: `${pos2.lat},${pos1.lon}`,
+            };
+            const spirii = new Spirii();
+            chargerPositionsPromise = spirii.query(spiriiParams);
+        } catch (error) {
+            console.error('Failed fetching charger locations.');
+            console.log(error);
+            if (error instanceof NetworkingError) {
+                return errResponse(403, error.message);
+            } else {
+                return errResponse(500, 'unknown exception');
+            }
         }
     }
 
     // The GreenMo and Spirii requests are executed asynchronously.
-    let [carPositions, chargerPositions] = await Promise.all([
-        carPositionsPromise,
-        chargerPositionsPromise,
-    ]);
+    let carPositions: Position[] = [];
+    let chargerPositions: Position[] | undefined;
+    if (queryChargers) {
+        [carPositions, chargerPositions] = await Promise.all([
+            carPositionsPromise,
+            chargerPositionsPromise,
+        ]);
+    } else {
+        carPositions = await carPositionsPromise;
+    }
 
     let resp: APIGatewayProxyResult;
-    if (carPositions.length == 0 || chargerPositions.length == 0) {
+
+    if (
+        (chargerPositions && chargerPositions.length == 0) ||
+        carPositions.length == 0
+    ) {
         let msg = 'No available chargers were found.';
         if (carPositions.length == 0) {
             msg = 'No cars for charging were found.';
         }
         console.log(msg);
-
         resp = { statusCode: 200, body: msg };
     } else {
         console.log('Cars for charging were found.');
@@ -220,7 +237,7 @@ export const handler = async (
         try {
             img = await executeMapsRequest(centerPos, {
                 carPositions,
-                chargerPositions,
+                chargerPositions: chargerPositions || [],
             });
         } catch (error) {
             console.error('Generating map failed.');
