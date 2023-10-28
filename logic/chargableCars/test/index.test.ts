@@ -99,7 +99,9 @@ test('greenmo didnt find any cars', async () => {
     // @ts-expect-error
     const resp = await handler(event, {});
     expect(resp.statusCode).toBe(200);
-    expect(resp.body).toBe('No cars for charging were found.');
+    expect(resp.body).toBe(
+        JSON.stringify({ message: 'No cars for charging were found.' })
+    );
 });
 
 test('spirii didnt find any available chargers', async () => {
@@ -121,7 +123,9 @@ test('spirii didnt find any available chargers', async () => {
     // @ts-expect-error
     const resp = await handler(event, {});
     expect(resp.statusCode).toBe(200);
-    expect(resp.body).toBe('No available chargers were found.');
+    expect(resp.body).toBe(
+        JSON.stringify({ message: 'No available chargers were found.' })
+    );
 });
 
 test('cars and chargers were found', async () => {

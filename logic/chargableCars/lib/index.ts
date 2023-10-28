@@ -227,7 +227,7 @@ export const handler = async (
             msg = 'No cars for charging were found.';
         }
         console.log(msg);
-        resp = { statusCode: 200, body: msg };
+        resp = { statusCode: 200, body: JSON.stringify({ message: msg }) };
     } else {
         console.log('Cars for charging were found.');
 
