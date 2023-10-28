@@ -146,10 +146,8 @@ test('cars and chargers were found', async () => {
         { lat: 1.123, lon: 1.123 },
     ]);
 
-    console.log(Date.now());
     // @ts-expect-error
     const resp = await handler(event, {});
-    console.log(Date.now());
     expect(resp.statusCode).toBe(200);
     expect(resp.body).toBeDefined();
 });
