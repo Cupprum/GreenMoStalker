@@ -103,17 +103,16 @@ class GreenMoApi extends apigw.RestApi {
             binaryMediaTypes: ['*/*'],
         });
 
+        const usagePlan = this.addUsagePlan('usagePlan');
+
         // Hide the lambda functions behind apiKey.
         // Currently useful because i don't want to go over google maps free tier.
         const apiKey = this.addApiKey('apiKey', {
             value: process.env.GREENMO_API_KEY ?? '',
         });
 
-        const usagePlan = this.addUsagePlan('usagePlan');
-
         // Usage plan enforces the use of apiKey.
         usagePlan.addApiKey(apiKey);
-
         // Usage plan has to be bound to a specific stage in order to work.
         usagePlan.addApiStage({ stage: this.deploymentStage });
     }
