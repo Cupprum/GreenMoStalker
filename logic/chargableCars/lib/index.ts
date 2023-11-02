@@ -254,7 +254,7 @@ export const handler = async (
 
         resp = {
             statusCode: 200,
-            headers: { 'Content-Type': 'image/png' },
+            headers: { 'Content-Type': 'image/jpeg' },
             body: transformedImage,
             isBase64Encoded: true,
         };
