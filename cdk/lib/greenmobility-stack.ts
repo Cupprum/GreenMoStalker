@@ -95,6 +95,8 @@ export class GreenMobility extends cdk.Stack {
 
 class GreenMoApi extends apigw.RestApi {
     constructor(scope: Construct) {
+        // I do not controll Accept header. Therefore i use */* in binaryMediaTypes.
+        // https://docs.aws.amazon.com/apigateway/latest/developerguide/lambda-proxy-binary-media.html
         super(scope, 'greenMoApi', {
             restApiName: 'greenmoApi',
             apiKeySourceType: apigw.ApiKeySourceType.HEADER,
