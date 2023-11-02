@@ -10,8 +10,15 @@
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
         "ghcr.io/devcontainers/features/aws-cli": {}
     },
-    "postStartCommand": "cd /usr/local; curl -L https://dl.dagger.io/dagger/install.sh | sudo sh"
+    "postStartCommand": "cd /usr/local; curl -L https://dl.dagger.io/dagger/install.sh | sudo sh",
 
     // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
     // "remoteUser": "root"
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "aws.telemetry": false
+            }
+        }
+    }
 }
