@@ -1,11 +1,11 @@
 import * as cdk from 'aws-cdk-lib';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as path from 'path';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
+import { aws_apigateway as apigw } from 'aws-cdk-lib';
+import { aws_iam as iam } from 'aws-cdk-lib';
+import { aws_lambda as lambda } from 'aws-cdk-lib';
+import { aws_ssm as ssm } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-var cp = require('child_process');
+import * as cp from 'child_process';
+import * as path from 'path';
 
 function packageLambdaCode(path: string): lambda.AssetCode {
     return lambda.Code.fromAsset(path, {
