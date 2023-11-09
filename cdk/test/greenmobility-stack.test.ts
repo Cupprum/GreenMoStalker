@@ -1,6 +1,9 @@
-import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Capture, Match, Template } from 'aws-cdk-lib/assertions';
 import * as cdk from 'aws-cdk-lib';
 import { GreenMobility } from '../lib/greenmobility-stack';
+
+// Get Name or Id of a CloudFormation object.
+const getName = (o: {}) => Object.keys(o).at(0);
 
 describe('Given the creation of GreenMobility stack', () => {
     describe('When the stack synthesizes', () => {
@@ -32,26 +35,36 @@ describe('Given the creation of GreenMobility stack', () => {
             });
 
             test('Should have associated IAM Role with access to read SSM Parameters', () => {
+                const roleInLambdaCapture = new Capture();
+                const roleInPolicyCapture = new Capture();
+
+                template.hasResourceProperties('AWS::Lambda::Function', {
+                    Role: {
+                        'Fn::GetAtt': [roleInLambdaCapture, 'Arn'],
+                    },
+                });
+
                 template.hasResourceProperties('AWS::IAM::Policy', {
                     PolicyDocument: {
                         Statement: Match.arrayWith([
                             {
                                 Action: 'ssm:GetParameter',
                                 Effect: 'Allow',
-                                Resource: Match.stringLikeRegexp(
-                                    '.*:parameter/greenmo/.*',
-                                ),
+                                Resource:
+                                    'arn:aws:ssm:xxx:xxx:parameter/greenmo/*',
                             },
                         ]),
                     },
                     Roles: Match.arrayWith([
                         {
-                            Ref: Match.stringLikeRegexp(
-                                '^chargableCarsLambda.*',
-                            ),
+                            Ref: roleInPolicyCapture,
                         },
                     ]),
                 });
+
+                expect(roleInLambdaCapture.asString()).toBe(
+                    roleInPolicyCapture.asString(),
+                );
             });
 
             test('Can be triggered by the  API Gateway', () => {
@@ -70,52 +83,82 @@ describe('Given the creation of GreenMobility stack', () => {
             });
 
             test('Should be integrated with the Lambda Function', () => {
+                const lambda = getName(
+                    template.findResources('AWS::Lambda::Function'),
+                );
+
+                const lambdaCapture = new Capture();
+
                 template.hasResourceProperties('AWS::ApiGateway::Method', {
                     Integration: {
                         Type: 'AWS_PROXY',
                         Uri: {
                             'Fn::Join': Match.arrayWith([
                                 Match.arrayWith([
-                                    Match.objectLike({
-                                        'Fn::GetAtt': Match.arrayWith([
-                                            Match.stringLikeRegexp(
-                                                '^chargableCarsLambda.*',
-                                            ),
-                                        ]),
-                                    }),
+                                    {
+                                        'Fn::GetAtt': [lambdaCapture, 'Arn'],
+                                    },
                                 ]),
                             ]),
                         },
                     },
                 });
+
+                expect(lambdaCapture.asString()).toBe(lambda);
             });
 
             test('Should have a Usage Plan with API Key', () => {
+                const apiId = getName(
+                    template.findResources('AWS::ApiGateway::RestApi'),
+                );
+                const stage = getName(
+                    template.findResources('AWS::ApiGateway::Stage'),
+                );
+
+                const apiIdCapture = new Capture();
+                const stageCapture = new Capture();
+
                 template.hasResourceProperties('AWS::ApiGateway::UsagePlan', {
                     ApiStages: Match.arrayWith([
                         Match.objectLike({
                             ApiId: {
-                                Ref: Match.stringLikeRegexp('^greenMoApi.*'),
+                                Ref: apiIdCapture,
                             },
                             Stage: {
-                                Ref: Match.stringLikeRegexp('^greenMoApi.*'),
+                                Ref: stageCapture,
                             },
                         }),
                     ]),
                 });
 
+                expect(apiIdCapture.asString()).toBe(apiId);
+                expect(stageCapture.asString()).toBe(stage);
+
+                const keyId = getName(
+                    template.findResources('AWS::ApiGateway::ApiKey'),
+                );
+                const usagePlanId = getName(
+                    template.findResources('AWS::ApiGateway::UsagePlan'),
+                );
+
+                const keyIdCapture = new Capture();
+                const usagePlanIdCapture = new Capture();
+
                 template.hasResourceProperties(
                     'AWS::ApiGateway::UsagePlanKey',
                     {
                         KeyId: {
-                            Ref: Match.stringLikeRegexp('^greenMoApi.*'),
+                            Ref: keyIdCapture,
                         },
                         KeyType: 'API_KEY',
                         UsagePlanId: {
-                            Ref: Match.stringLikeRegexp('^greenMoApi.*'),
+                            Ref: usagePlanIdCapture,
                         },
                     },
                 );
+
+                expect(keyIdCapture.asString()).toBe(keyId);
+                expect(usagePlanIdCapture.asString()).toBe(usagePlanId);
             });
 
             test('Should support binaryMediaTypes', () => {
