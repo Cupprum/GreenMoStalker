@@ -18,7 +18,7 @@ connect(
         console.log('Install dependencies for logic.');
         const logicRunner = logicSource
             .withWorkdir('logic/chargableCars')
-            .withExec(['npm', 'install']);
+            .withExec(['npm', 'ci']);
 
         console.log('Execute unit tests on logic.');
         const logicTested = logicRunner.withExec(['npm', 'test']);
@@ -44,7 +44,7 @@ connect(
         console.log('Install dependencies for infra.');
         const infraRunner = infraSource
             .withWorkdir('cdk')
-            .withExec(['npm', 'install']);
+            .withExec(['npm', 'ci']);
 
         console.log('Execute unit tests on infra.');
         const infraTested = infraRunner.withExec(['npm', 'test']);

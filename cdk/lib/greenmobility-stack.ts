@@ -17,7 +17,7 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                     cp.execSync(
                         `
                             cd ${path}
-                            npm install
+                            npm ci
                             npx esbuild lib/*.ts \
                                 --bundle \
                                 --minify \
