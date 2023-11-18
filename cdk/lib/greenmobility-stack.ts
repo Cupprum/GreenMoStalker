@@ -26,7 +26,7 @@ function packageLambdaCode(path: string): lambda.AssetCode {
                                 --target=es2020 \
                                 --outfile=${outputDir}/index.js
                         `,
-                        { stdio: 'inherit' }
+                        { stdio: 'inherit' },
                     );
                     return true;
                 },
@@ -53,7 +53,7 @@ export class GreenMobility extends cdk.Stack {
             '..',
             '..',
             'logic',
-            'chargableCars'
+            'chargableCars',
         );
         const code = packageLambdaCode(codePath);
 
@@ -72,13 +72,13 @@ export class GreenMobility extends cdk.Stack {
                 resources: [
                     `arn:aws:ssm:${this.region}:${this.account}:parameter/greenmo/*`,
                 ],
-            })
+            }),
         );
 
         // Allow invocation from apigateway.
         func.addPermission('ApiGatewayInvokePermission', {
             principal: new cdk.aws_iam.ServicePrincipal(
-                'apigateway.amazonaws.com'
+                'apigateway.amazonaws.com',
             ),
             action: 'lambda:InvokeFunction',
         });
@@ -119,9 +119,22 @@ class GreenMoApi extends apigw.RestApi {
 
     // Wrapper function to add lambda to apigateway path.
     public addLambda(func: lambda.Function, method: string, path: string) {
-        const integration = new apigw.LambdaIntegration(func);
+        const integration = new apigw.LambdaIntegration(func, {
+            integrationResponses: [
+                {
+                    statusCode: '200',
+                },
+            ],
+        });
 
         const route = this.root.addResource(path);
-        route.addMethod(method, integration, { apiKeyRequired: true });
+        route.addMethod(method, integration, {
+            apiKeyRequired: true,
+            methodResponses: [
+                {
+                    statusCode: '200',
+                },
+            ],
+        });
     }
 }
