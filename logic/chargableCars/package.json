@@ -3,7 +3,7 @@
     "dependencies": {
         "@aws-lambda-powertools/parameters": "^1.14.0",
         "@aws-sdk/client-ssm": "^3.438.0",
-        "axios": "^1.5.1"
+        "axios": "^1.6.0"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.124",
