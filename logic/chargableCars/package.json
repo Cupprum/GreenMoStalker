@@ -2,7 +2,7 @@
     "name": "chargablecars",
     "dependencies": {
         "@aws-lambda-powertools/parameters": "^1.16.0",
-        "@aws-sdk/client-ssm": "^3.438.0",
+        "@aws-sdk/client-ssm": "^3.462.0",
         "axios": "^1.6.0"
     },
     "devDependencies": {
