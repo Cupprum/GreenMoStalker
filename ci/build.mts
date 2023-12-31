@@ -55,13 +55,6 @@ connect(
         const infraTested = infraRunner.withExec(['npm', 'test']);
         await infraTested.stderr();
 
-        console.log('Creds');
-        console.log(env.GREENMO_AWS_ACCOUNT?.slice(0, 2));
-        console.log(env.GREENMO_AWS_REGION?.slice(0, 2));
-        console.log(env.GREENMO_AWS_ACCESS_KEY_ID?.slice(0, 2));
-        console.log(env.GREENMO_AWS_SECRET_ACCESS_KEY?.slice(0, 2));
-        console.log(env.GREENMO_OPEN_MAPS_API_TOKEN?.slice(0, 2));
-
         console.log('Deploy infra.');
         const infraDeployed = infraTested
             .withEnvVariable('AWS_ACCOUNT', env.GREENMO_AWS_ACCOUNT || 'undefined')
