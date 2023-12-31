@@ -8,5 +8,8 @@ node_modules
 .cdk.staging
 cdk.out
 
+# Logic
+dist
+
 # macOS
 .DS_Store
