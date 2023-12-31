@@ -4,36 +4,8 @@ import { aws_iam as iam } from 'aws-cdk-lib';
 import { aws_lambda as lambda } from 'aws-cdk-lib';
 import { aws_ssm as ssm } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import * as cp from 'child_process';
 import * as path from 'path';
 
-function packageLambdaCode(path: string): lambda.AssetCode {
-    return lambda.Code.fromAsset(path, {
-        bundling: {
-            image: lambda.Runtime.NODEJS_18_X.bundlingImage,
-            command: [],
-            local: {
-                tryBundle(outputDir: string) {
-                    cp.execSync(
-                        `
-                            cd ${path}
-                            npm ci
-                            npx esbuild lib/*.ts \
-                                --bundle \
-                                --minify \
-                                --sourcemap \
-                                --platform=node \
-                                --target=es2020 \
-                                --outfile=${outputDir}/index.js
-                        `,
-                        { stdio: 'inherit' },
-                    );
-                    return true;
-                },
-            },
-        },
-    });
-}
 
 export class GreenMobility extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -54,8 +26,9 @@ export class GreenMobility extends cdk.Stack {
             '..',
             'logic',
             'chargableCars',
+            'dist',
         );
-        const code = packageLambdaCode(codePath);
+        const code = lambda.Code.fromAsset(codePath);
 
         const func = new lambda.Function(this, 'chargableCarsLambda', {
             functionName: 'chargableCarsLambda',
