@@ -1,5 +1,7 @@
 # Greenmobility Stalker
 
+[![GreenMo Stalker deployment](https://github.com/Cupprum/GreenMoStalker/actions/workflows/deploy.yml/badge.svg?branch=master)](https://github.com/Cupprum/GreenMoStalker/actions/workflows/deploy.yml)
+
 ## Project Description:
 
 This project aims to create an API that serves as a proxy to the functionality provided by [Greenmobility](https://www.greenmobility.com). When a Greenmobility car is placed on a charger while low on battery, users receive free driving minutes.
