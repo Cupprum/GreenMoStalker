@@ -264,6 +264,8 @@ export const handler = async (
     return resp;
 };
 
+
+// // Used for local development.
 // const event = {
 //     queryStringParameters: {
 //         lon1: "12.511368",

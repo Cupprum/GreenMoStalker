@@ -33,3 +33,63 @@ Several factors influenced my decision to make certain changes in the project:
 
 4. Switching to Geoapify Static Maps API: I transitioned from using Google Maps Static API to Geoapify Static Maps API due to the requirements imposed by Google. The Google API necessitates attaching a credit card to the account, while Geoapify offers a free tier without the need for credit card details. Moreover, I appreciate that Geoapify utilizes the [OpenStreetMap](https://www.openstreetmap.org/) infrastructure, which adds to its appeal.
 
+### Development:
+
+
+#### Configuration:
+
+The project requires the following env vars.
+
+```sh
+export GREENMO_AWS_ACCOUNT='xxx'  # AWS account into which the project is deployed.
+export GREENMO_AWS_REGION='xxx'  # Preferred AWS Region.
+export GREENMO_AWS_ACCESS_KEY_ID='xxx'  # MachineAccount credentials used during deployment.
+export GREENMO_AWS_SECRET_ACCESS_KEY='xxx'  # MachineAccount credentials used during deployment.
+export GREENMO_OPEN_MAPS_API_TOKEN='xxx'  # Token used to authenticate against [Geoapify](https://www.geoapify.com).
+```
+
+
+#### Logic:
+
+The logic is located in the following folder `logic/chargableCars`. Therefore before working on in, move to its directory: `cd logic/chargableCars`.
+
+**Installation**:
+```sh
+npm ci # Because npm install overwrites the package-lock.json file.
+```
+
+**Execute tests**:
+```
+npm test
+```
+
+**Local development**:
+The entrypoint for the code is located in `logic/chargableCars/lib/index.ts`. The commented code at the bottom of the file is used for local development.
+
+#### Infra:
+
+The infra is located in the following folder `cdk`. Therefore before working on in, move to its directory: `cd cdk`.
+
+**Installation**:
+```sh
+npm ci # Because npm install overwrites the package-lock.json file.
+```
+
+**Execute tests**:
+```
+npm test
+```
+
+#### Deployment pipeline:
+
+[Dagger](https://dagger.io) is used for the deployment purposes. By default the pipeline is executed from github actions, but it can also be executed locally and triggered manually. The pipeline is located in `ci`. Therefore before working on in, move to its directory: `cd ci`.
+
+**Installation**:
+```sh
+npm ci # Because npm install overwrites the package-lock.json file.
+```
+
+**Execute**:
+```sh
+npm run dagger
+```
