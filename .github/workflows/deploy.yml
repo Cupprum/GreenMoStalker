@@ -12,8 +12,8 @@ on:
       - 'ci/**'
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  AWS_ACCOUNT: ${{ vars.AWS_ACCOUNT }}
+  GREENMO_AWS_REGION: ${{ vars.GREENMO_AWS_REGION }}
+  GREENMO_AWS_ACCOUNT: ${{ vars.GREENMO_AWS_ACCOUNT }}
 
 jobs:
   dagger:
@@ -35,6 +35,6 @@ jobs:
         run: npm run dagger
         working-directory: ci
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          OPEN_MAPS_API_TOKEN: ${{ secrets.OPEN_MAPS_API_TOKEN }}
+          GREENMO_AWS_ACCESS_KEY_ID: ${{ secrets.GREENMO_AWS_ACCESS_KEY_ID }}
+          GREENMO_AWS_SECRET_ACCESS_KEY: ${{ secrets.GREENMO_AWS_SECRET_ACCESS_KEY }}
+          GREENMO_OPEN_MAPS_API_TOKEN: ${{ secrets.GREENMO_OPEN_MAPS_API_TOKEN }}
