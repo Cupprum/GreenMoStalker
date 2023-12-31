@@ -55,6 +55,9 @@ connect(
         const infraTested = infraRunner.withExec(['npm', 'test']);
         await infraTested.stderr();
 
+        console.log('Creds');
+        console.log(env.GREENMO_AWS_REGION);
+
         console.log('Deploy infra.');
         const infraDeployed = infraTested
             .withEnvVariable('AWS_ACCOUNT', env.GREENMO_AWS_ACCOUNT || 'undefined')
