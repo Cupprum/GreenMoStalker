@@ -21,7 +21,8 @@
         "typescript": "5.2.2"
     },
     "scripts": {
-        "test": "jest"
+        "test": "jest",
+        "deploy": "cdk deploy --require-approval never"
     },
     "jest": {
         "preset": "ts-jest"

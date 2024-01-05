@@ -25,13 +25,8 @@ connect(
 
         console.log('- Package logic');
         const buildDir = logicRunner
-            .withExec(['npx', 'esbuild', 'lib/index.ts',
-                '--bundle',
-                '--minify',
-                '--platform=node',
-                '--target=es2020',
-                '--outfile=dist/index.js'
-            ]).directory('./dist');
+            .withExec(['npm', 'run', 'build'])
+            .directory('./dist');
 
         console.log('- Initilize container for interacting with infra.');
         const infraPath = path.join(cwd(), '..', 'cdk');
@@ -41,10 +36,7 @@ connect(
             .withDirectory('cdk', client.host().directory(infraPath), {
                 exclude: ['node_modules/'],
             })
-            .withDirectory(
-                'logic/chargableCars/dist',
-                buildDir,
-            );
+            .withDirectory('logic/chargableCars/dist', buildDir);
 
         console.log('- Install dependencies for infra.');
         const infraRunner = infraSource
@@ -57,23 +49,33 @@ connect(
 
         console.log('- Deploy infra.');
         const infraDeployed = infraTested
-            .withEnvVariable('AWS_ACCOUNT', env.GREENMO_AWS_ACCOUNT || 'undefined')
-            .withEnvVariable('AWS_REGION', env.GREENMO_AWS_REGION || 'undefined')
+            .withEnvVariable(
+                'AWS_ACCOUNT',
+                env.GREENMO_AWS_ACCOUNT || 'undefined',
+            )
+            .withEnvVariable(
+                'AWS_REGION',
+                env.GREENMO_AWS_REGION || 'undefined',
+            )
             .withEnvVariable(
                 'AWS_ACCESS_KEY_ID',
-                env.GREENMO_AWS_ACCESS_KEY_ID || 'undefined'
+                env.GREENMO_AWS_ACCESS_KEY_ID || 'undefined',
             )
             .withEnvVariable(
                 'AWS_SECRET_ACCESS_KEY',
-                env.GREENMO_AWS_SECRET_ACCESS_KEY || 'undefined'
+                env.GREENMO_AWS_SECRET_ACCESS_KEY || 'undefined',
+            )
+            .withEnvVariable(
+                'GREENMO_API_KEY',
+                env.GREENMO_API_KEY || 'undefined',
             )
             .withEnvVariable(
                 'OPEN_MAPS_API_TOKEN',
-                env.GREENMO_OPEN_MAPS_API_TOKEN || 'undefined'
+                env.GREENMO_OPEN_MAPS_API_TOKEN || 'undefined',
             )
-            .withExec(['npx', 'cdk', 'deploy']);
+            .withExec(['npm', 'run', 'deploy']);
 
         await infraDeployed.stderr();
     },
-    { LogOutput: process.stdout }
+    { LogOutput: process.stdout },
 );
