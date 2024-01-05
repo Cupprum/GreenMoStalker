@@ -14,7 +14,7 @@ export class GreenMobility extends cdk.Stack {
 
         // I do not controll Accept header. Therefore i use */* in binaryMediaTypes.
         // https://docs.aws.amazon.com/apigateway/latest/developerguide/lambda-proxy-binary-media.html
-        const api = new apigw.LambdaRestApi(this, 'myapi', {
+        const api = new apigw.LambdaRestApi(this, 'GreenMoApi', {
             handler: chargableCarsLambda,
             proxy: false,
             restApiName: 'greenmoApi',
@@ -25,6 +25,7 @@ export class GreenMobility extends cdk.Stack {
                 methodResponses: [
                     {
                         statusCode: '200',
+                        // responseModels: {} TODO: continue here
                     },
                 ],
             },
