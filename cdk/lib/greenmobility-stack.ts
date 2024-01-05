@@ -6,16 +6,45 @@ import { aws_ssm as ssm } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
-
 export class GreenMobility extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        const greenmoApi = new GreenMoApi(this);
-
         const chargableCarsLambda = this.chargableCarsLambda();
 
-        greenmoApi.addLambda(chargableCarsLambda, 'GET', 'cars');
+        // I do not controll Accept header. Therefore i use */* in binaryMediaTypes.
+        // https://docs.aws.amazon.com/apigateway/latest/developerguide/lambda-proxy-binary-media.html
+        const api = new apigw.LambdaRestApi(this, 'myapi', {
+            handler: chargableCarsLambda,
+            proxy: false,
+            restApiName: 'greenmoApi',
+            apiKeySourceType: apigw.ApiKeySourceType.HEADER,
+            binaryMediaTypes: ['*/*'],
+            defaultMethodOptions: {
+                apiKeyRequired: true,
+                methodResponses: [
+                    {
+                        statusCode: '200',
+                    },
+                ],
+            },
+        });
+
+        const carsEndpoint = api.root.addResource('cars');
+        carsEndpoint.addMethod('GET'); // GET /cars
+
+        const usagePlan = api.addUsagePlan('usagePlan');
+
+        // Hide the lambda functions behind apiKey.
+        // Currently useful because i don't want to go over free tier.
+        const apiKey = api.addApiKey('apiKey', {
+            value: process.env.GREENMO_API_KEY ?? '',
+        });
+
+        // Usage plan enforces the use of apiKey.
+        usagePlan.addApiKey(apiKey);
+        // Usage plan has to be bound to a specific stage in order to work.
+        usagePlan.addApiStage({ stage: api.deploymentStage });
     }
 
     private chargableCarsLambda(): lambda.Function {
@@ -63,51 +92,5 @@ export class GreenMobility extends cdk.Stack {
         });
 
         return func;
-    }
-}
-
-class GreenMoApi extends apigw.RestApi {
-    constructor(scope: Construct) {
-        // I do not controll Accept header. Therefore i use */* in binaryMediaTypes.
-        // https://docs.aws.amazon.com/apigateway/latest/developerguide/lambda-proxy-binary-media.html
-        super(scope, 'greenMoApi', {
-            restApiName: 'greenmoApi',
-            apiKeySourceType: apigw.ApiKeySourceType.HEADER,
-            binaryMediaTypes: ['*/*'],
-        });
-
-        const usagePlan = this.addUsagePlan('usagePlan');
-
-        // Hide the lambda functions behind apiKey.
-        // Currently useful because i don't want to go over google maps free tier.
-        const apiKey = this.addApiKey('apiKey', {
-            value: process.env.GREENMO_API_KEY ?? '',
-        });
-
-        // Usage plan enforces the use of apiKey.
-        usagePlan.addApiKey(apiKey);
-        // Usage plan has to be bound to a specific stage in order to work.
-        usagePlan.addApiStage({ stage: this.deploymentStage });
-    }
-
-    // Wrapper function to add lambda to apigateway path.
-    public addLambda(func: lambda.Function, method: string, path: string) {
-        const integration = new apigw.LambdaIntegration(func, {
-            integrationResponses: [
-                {
-                    statusCode: '200',
-                },
-            ],
-        });
-
-        const route = this.root.addResource(path);
-        route.addMethod(method, integration, {
-            apiKeyRequired: true,
-            methodResponses: [
-                {
-                    statusCode: '200',
-                },
-            ],
-        });
     }
 }
