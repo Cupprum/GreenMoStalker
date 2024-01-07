@@ -78,7 +78,7 @@ describe('Given the creation of GreenMobility stack', () => {
         describe('Then a API Gateway', () => {
             test('Should be created', () => {
                 template.hasResourceProperties('AWS::ApiGateway::RestApi', {
-                    Name: 'greenmoApi',
+                    Name: 'GreenMoApi',
                 });
             });
 
@@ -163,7 +163,7 @@ describe('Given the creation of GreenMobility stack', () => {
 
             test('Should support binaryMediaTypes', () => {
                 template.hasResourceProperties('AWS::ApiGateway::RestApi', {
-                    Name: 'greenmoApi',
+                    Name: 'GreenMoApi',
                     BinaryMediaTypes: ['*/*'],
                 });
             });
