@@ -12,27 +12,68 @@ export class GreenMobility extends cdk.Stack {
 
         const chargableCarsLambda = this.chargableCarsLambda();
 
-        // I do not controll Accept header. Therefore i use */* in binaryMediaTypes.
+        // I do not control Accept header. Therefore i use */* in binaryMediaTypes.
         // https://docs.aws.amazon.com/apigateway/latest/developerguide/lambda-proxy-binary-media.html
-        const api = new apigw.LambdaRestApi(this, 'GreenMoApi', {
-            handler: chargableCarsLambda,
-            proxy: false,
-            restApiName: 'greenmoApi',
+        const api = new apigw.RestApi(this, 'GreenMoApi', {
             apiKeySourceType: apigw.ApiKeySourceType.HEADER,
             binaryMediaTypes: ['*/*'],
             defaultMethodOptions: {
                 apiKeyRequired: true,
-                methodResponses: [
-                    {
-                        statusCode: '200',
-                        // responseModels: {} TODO: continue here
-                    },
-                ],
             },
         });
 
+        const mapModel = api.addModel('MapModel', {
+            contentType: 'image/png',
+            schema: {},
+        });
+
+        const messageModel = api.addModel('MessageModel', {
+            schema: {
+                type: apigw.JsonSchemaType.OBJECT,
+                properties: {
+                    message: {
+                        type: apigw.JsonSchemaType.STRING,
+                    },
+                },
+                required: ['message'],
+            },
+        });
+
+        const generateMessageResponse = (statusCode: string) => {
+            return {
+                statusCode: statusCode,
+                responseModels: {
+                    'application/json': messageModel,
+                },
+            };
+        };
+
         const carsEndpoint = api.root.addResource('cars');
-        carsEndpoint.addMethod('GET'); // GET /cars
+        carsEndpoint.addMethod(
+            'GET',
+            new apigw.LambdaIntegration(chargableCarsLambda),
+            {
+                requestParameters: {
+                    'method.request.querystring.lat1': true,
+                    'method.request.querystring.lon1': true,
+                    'method.request.querystring.lat2': true,
+                    'method.request.querystring.lon2': true,
+                    'method.request.querystring.chargers': false,
+                },
+                methodResponses: [
+                    {
+                        statusCode: '200',
+                        responseModels: {
+                            'image/png': mapModel,
+                            'application/json': messageModel,
+                        },
+                    },
+                    generateMessageResponse('400'),
+                    generateMessageResponse('403'),
+                    generateMessageResponse('500'),
+                ],
+            },
+        );
 
         const usagePlan = api.addUsagePlan('usagePlan');
 
