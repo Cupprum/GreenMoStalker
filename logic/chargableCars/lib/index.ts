@@ -114,6 +114,10 @@ function messageResponse(statusCode: number, message: string) {
     console.log('The lambda function execution failed.');
     return {
         statusCode: statusCode,
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': 'https://editor.swagger.io',
+        },
         body: JSON.stringify({
             message: message,
         }),
