@@ -12,13 +12,16 @@ export class GreenMobility extends cdk.Stack {
 
         const chargableCarsLambda = this.chargableCarsLambda();
 
-        // I do not control Accept header. Therefore i use */* in binaryMediaTypes.
+        // The 'Accept' header in the request should be -> Accept: image/png, application/json
         // https://docs.aws.amazon.com/apigateway/latest/developerguide/lambda-proxy-binary-media.html
         const api = new apigw.RestApi(this, 'GreenMoApi', {
             apiKeySourceType: apigw.ApiKeySourceType.HEADER,
-            binaryMediaTypes: ['*/*'],
+            binaryMediaTypes: ['image/png'],
             defaultMethodOptions: {
                 apiKeyRequired: true,
+            },
+            deployOptions: {
+                loggingLevel: apigw.MethodLoggingLevel.INFO,
             },
         });
 
@@ -42,6 +45,10 @@ export class GreenMobility extends cdk.Stack {
         const generateMessageResponse = (statusCode: string) => {
             return {
                 statusCode: statusCode,
+                responseParameters: {
+                    'method.response.header.Content-Type': true,
+                    'method.response.header.Access-Control-Allow-Origin': true,
+                },
                 responseModels: {
                     'application/json': messageModel,
                 },
@@ -63,6 +70,10 @@ export class GreenMobility extends cdk.Stack {
                 methodResponses: [
                     {
                         statusCode: '200',
+                        responseParameters: {
+                            'method.response.header.Content-Type': true,
+                            'method.response.header.Access-Control-Allow-Origin': true,
+                        },
                         responseModels: {
                             'image/png': mapModel,
                             'application/json': messageModel,
@@ -74,6 +85,12 @@ export class GreenMobility extends cdk.Stack {
                 ],
             },
         );
+
+        // Enable CORS support for the endpoint.
+        carsEndpoint.addCorsPreflight({
+            allowOrigins: ['https://editor.swagger.io'],
+            allowMethods: ['GET'],
+        });
 
         const usagePlan = api.addUsagePlan('usagePlan');
 
