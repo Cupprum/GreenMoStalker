@@ -219,19 +219,26 @@ export const handler = async (
     let resp: APIGatewayProxyResult;
 
     if (
-        (chargerPositions && chargerPositions.length == 0) ||
+        (chargerPositions && chargerPositions.length == 0) &&
         carPositions.length == 0
     ) {
-        let msg = 'No available chargers were found.';
-        if (carPositions.length == 0) {
-            msg = 'No cars for charging were found.';
-        }
+        let msg = `No available cars${queryChargers ? ' and chargers': ''} were found.`;
         console.log(msg);
-        resp = { statusCode: 200, body: JSON.stringify({ message: msg }) };
+        resp = {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': 'https://editor.swagger.io',
+            },
+            body: JSON.stringify({ message: msg }),
+        };
     } else {
-        console.log('Cars for charging were found.');
-        
-        console.log('Generate map of chargable cars.');
+        console.log(`Amount of found cars: ${carPositions.length}.`);
+        if (queryChargers) {
+            console.log(`Amount of found chargers: ${(chargerPositions || []).length}.`);
+        }
+
+        console.log('Generate map.');
         const centerPos = calculateCenter(pos1, pos2);
         let img: ArrayBuffer;
         try {
