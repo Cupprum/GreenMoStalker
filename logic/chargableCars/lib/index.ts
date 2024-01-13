@@ -11,7 +11,7 @@ import { Position, NetworkingError } from './query/PositionQuery';
 import { GreenMo } from './query/GreenMo';
 import { Spirii } from './query/Spirii';
 
-class ParseError extends Error {}
+class ParseError extends Error { }
 
 export function parsePositions(
     parameters: APIGatewayProxyEventQueryStringParameters
@@ -110,7 +110,7 @@ export function transformImage(img: ArrayBuffer): string {
     return Buffer.from(img).toString('base64');
 }
 
-function errResponse(statusCode: number, message: string) {
+function messageResponse(statusCode: number, message: string) {
     console.log('The lambda function execution failed.');
     return {
         statusCode: statusCode,
@@ -134,7 +134,7 @@ export const handler = async (
     if (!parameters) {
         const errMsg = 'The query string parameters are missing.';
         console.error(errMsg);
-        return errResponse(400, errMsg);
+        return messageResponse(400, errMsg);
     }
 
     let pos1, pos2: Position;
@@ -144,14 +144,14 @@ export const handler = async (
         console.error('Parsing positions failed.');
         console.error(error);
         if (error instanceof ParseError) {
-            return errResponse(400, error.message);
+            return messageResponse(400, error.message);
         } else {
-            return errResponse(500, 'unknown exception');
+            return messageResponse(500, 'unknown exception');
         }
     }
     console.log('Positions successfully parsed.');
 
-    console.log('Parse parameters.');
+    console.log('Parse rest of the parameters.');
     const queryChargers = (parameters['chargers'] as string) == 'true';
     console.log(`chargers: ${queryChargers}`);
     const desiredFuelLevel = parameters['desiredFuelLevel']
@@ -175,9 +175,9 @@ export const handler = async (
         console.error('Failed fetching cars for charging.');
         console.log(error);
         if (error instanceof NetworkingError) {
-            return errResponse(403, error.message);
+            return messageResponse(403, error.message);
         } else {
-            return errResponse(500, 'unknown exception');
+            return messageResponse(500, 'unknown exception');
         }
     }
 
@@ -197,9 +197,9 @@ export const handler = async (
             console.error('Failed fetching charger locations.');
             console.log(error);
             if (error instanceof NetworkingError) {
-                return errResponse(403, error.message);
+                return messageResponse(403, error.message);
             } else {
-                return errResponse(500, 'unknown exception');
+                return messageResponse(500, 'unknown exception');
             }
         }
     }
@@ -230,7 +230,7 @@ export const handler = async (
         resp = { statusCode: 200, body: JSON.stringify({ message: msg }) };
     } else {
         console.log('Cars for charging were found.');
-
+        
         console.log('Generate map of chargable cars.');
         const centerPos = calculateCenter(pos1, pos2);
         let img: ArrayBuffer;
@@ -243,9 +243,9 @@ export const handler = async (
             console.error('Generating map failed.');
             console.log(error);
             if (error instanceof NetworkingError) {
-                return errResponse(403, error.message);
+                return messageResponse(403, error.message);
             } else {
-                return errResponse(500, 'unknown exception');
+                return messageResponse(500, 'unknown exception');
             }
         }
         console.log('Map generated successfully.');
@@ -254,7 +254,10 @@ export const handler = async (
 
         resp = {
             statusCode: 200,
-            headers: { 'Content-Type': 'image/jpeg' },
+            headers: {
+                'Content-Type': 'image/jpeg',
+                'Access-Control-Allow-Origin': 'https://editor.swagger.io',
+            },
             body: transformedImage,
             isBase64Encoded: true,
         };
