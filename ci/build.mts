@@ -6,18 +6,18 @@ connect(
     async (client) => {
         console.log('- Initialize container for interacting with logic.');
         const logicPath = path.join(cwd(), '..', 'logic', 'chargableCars');
+        const nodeLogicCache = client.cacheVolume("nodeLogicCache");
         const logicSource = client
             .container()
             .from('node:18-slim')
             .withDirectory('logic/chargableCars', client.host().directory(logicPath, {
                 exclude: ['node_modules']
-            }));
+            }))
+            .withMountedCache('logic/chargableCars/node_modules', nodeLogicCache);
 
         console.log('- Install dependencies for logic.');
-        const nodeLogicCache = client.cacheVolume("node");
         const logicRunner = logicSource
             .withWorkdir('logic/chargableCars')
-            .withMountedCache('node_modules', nodeLogicCache)
             .withExec(['npm', 'ci']);
 
         console.log('- Execute unit tests on logic.');
@@ -31,19 +31,19 @@ connect(
 
         console.log('- Initilize container for interacting with infra.');
         const infraPath = path.join(cwd(), '..', 'cdk');
+        const nodeInfraCache = client.cacheVolume("nodeInfraCache");
         const infraSource = client
             .container()
             .from('node:18-slim')
             .withDirectory('cdk', client.host().directory(infraPath, {
                 exclude: ['node_modules'],
             }))
+            .withMountedCache('cdk/node_modules', nodeInfraCache)
             .withDirectory('logic/chargableCars/dist', buildDir);
 
         console.log('- Install dependencies for infra.');
-        const nodeInfraCache = client.cacheVolume("node");
         const infraRunner = infraSource
             .withWorkdir('cdk')
-            .withMountedCache('node_modules', nodeInfraCache)
             .withExec(['npm', 'ci']);
 
         console.log('- Execute unit tests on infra.');
