@@ -4,7 +4,7 @@
 
 ## Project Description:
 
-This project aims to create an API that serves as a proxy to the functionality provided by [Greenmobility](https://www.greenmobility.com). When a Greenmobility car is placed on a charger while low on battery, users receive free driving minutes.
+This project aims to create an API that serves as a proxy to the functionality provided by [Greenmobility](https://www.greenmobility.com). When a Greenmobility car is placed on a charger while low on battery, users receive free driving minutes. The purpose of this API is to allow for easier automation of fetching information about cars in order to get free minutes.
 
 ### Diagram:
 ![Diagram](diagram/greenmo-diagram.png)
