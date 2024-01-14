@@ -5,8 +5,7 @@
         "prettier": "^3.0.3"
     },
     "scripts": {
-        "prepare": "husky install",
-        "get-swagger": "aws apigateway get-export --parameters extensions='integrations' --rest-api-id 'xxxxxx' --stage-name 'prod' --export-type 'oas30' 'new-openapi.json' --region 'eu-central-1'"
+        "prepare": "husky install"
     },
     "prettier": {
         "tabWidth": 4,
