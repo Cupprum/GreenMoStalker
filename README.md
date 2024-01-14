@@ -18,6 +18,7 @@ The API Gateway can be accessed from different devices, including iPhones using 
 
 ## Development:
 
+It is recommended to work on this project from a Github Codespaces with a predefined custom Fedora container.
 
 ### Configuration:
 
