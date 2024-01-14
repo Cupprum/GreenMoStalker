@@ -164,7 +164,7 @@ describe('Given the creation of GreenMobility stack', () => {
             test('Should support binaryMediaTypes', () => {
                 template.hasResourceProperties('AWS::ApiGateway::RestApi', {
                     Name: 'GreenMoApi',
-                    BinaryMediaTypes: ['*/*'],
+                    BinaryMediaTypes: ['image/png'],
                 });
             });
         });
