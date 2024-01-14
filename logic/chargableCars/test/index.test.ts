@@ -38,11 +38,11 @@ test('the image containg a map is generated', async () => {
     const mockOutput = Buffer.from([0xff, 0xff, 0xff]);
 
     (getParameter as jest.Mock).mockImplementation(() =>
-        Promise.resolve('xxx')
+        Promise.resolve('xxx'),
     );
 
     (axios.get as jest.Mock).mockImplementation(() =>
-        Promise.resolve({ status: 200, data: mockOutput })
+        Promise.resolve({ status: 200, data: mockOutput }),
     );
 
     await executeMapsRequest(centerPos, {
@@ -67,7 +67,7 @@ test('parameters were not specified', async () => {
     const resp = await handler({}, {});
     expect(resp.statusCode).toBe(400);
     expect(resp.body).toBe(
-        JSON.stringify({ message: 'The query string parameters are missing.' })
+        JSON.stringify({ message: 'The query string parameters are missing.' }),
     );
 });
 
@@ -80,17 +80,18 @@ test('parameters were specified incorrectly', async () => {
     const resp = await handler(event, {});
     expect(resp.statusCode).toBe(400);
     expect(resp.body).toBe(
-        JSON.stringify({ message: 'The positions are not in a valid format.' })
+        JSON.stringify({ message: 'The positions are not in a valid format.' }),
     );
 });
 
-test('greenmo didnt find any cars', async () => {
+test('didnt find any cars or chargers', async () => {
     const event = {
         queryStringParameters: {
             lon1: '1.123456',
             lat1: '2.123456',
             lon2: '3.123456',
             lat2: '4.123456',
+            chargers: true,
         },
     };
 
@@ -100,11 +101,13 @@ test('greenmo didnt find any cars', async () => {
     const resp = await handler(event, {});
     expect(resp.statusCode).toBe(200);
     expect(resp.body).toBe(
-        JSON.stringify({ message: 'No cars for charging were found.' })
+        JSON.stringify({
+            message: 'No available cars and chargers were found.',
+        }),
     );
 });
 
-test('spirii didnt find any available chargers', async () => {
+test('didnt find any cars but found chargers', async () => {
     const event = {
         queryStringParameters: {
             lon1: '1.123456',
@@ -114,7 +117,37 @@ test('spirii didnt find any available chargers', async () => {
             chargers: 'true',
         },
     };
+    const data = 'test data';
 
+    (axios.get as jest.Mock).mockImplementation(() =>
+        Promise.resolve({ status: 200, data: Buffer.from(data) }),
+    );
+    jest.spyOn(GreenMo.prototype, 'query').mockImplementation(async () => []);
+    jest.spyOn(Spirii.prototype, 'query').mockImplementation(async () => [
+        { lat: 1.123, lon: 1.123 },
+    ]);
+
+    // @ts-expect-error
+    const resp = await handler(event, {});
+    expect(resp.statusCode).toBe(200);
+    expect(resp.body).toBe(Buffer.from(data).toString('base64'));
+});
+
+test('found cars but didnt find chargers', async () => {
+    const event = {
+        queryStringParameters: {
+            lon1: '1.123456',
+            lat1: '2.123456',
+            lon2: '3.123456',
+            lat2: '4.123456',
+            chargers: 'true',
+        },
+    };
+    const data = 'test data';
+
+    (axios.get as jest.Mock).mockImplementation(() =>
+        Promise.resolve({ status: 200, data: Buffer.from(data) }),
+    );
     jest.spyOn(GreenMo.prototype, 'query').mockImplementation(async () => [
         { lat: 1.123, lon: 1.123 },
     ]);
@@ -123,9 +156,7 @@ test('spirii didnt find any available chargers', async () => {
     // @ts-expect-error
     const resp = await handler(event, {});
     expect(resp.statusCode).toBe(200);
-    expect(resp.body).toBe(
-        JSON.stringify({ message: 'No available chargers were found.' })
-    );
+    expect(resp.body).toBe(Buffer.from(data).toString('base64'));
 });
 
 test('cars and chargers were found', async () => {
@@ -138,9 +169,10 @@ test('cars and chargers were found', async () => {
             chargers: 'true',
         },
     };
+    const data = 'test data';
 
     (axios.get as jest.Mock).mockImplementation(() =>
-        Promise.resolve({ status: 200, data: Buffer.from([]) })
+        Promise.resolve({ status: 200, data: Buffer.from(data) }),
     );
 
     jest.spyOn(GreenMo.prototype, 'query').mockImplementation(async () => [
@@ -153,5 +185,5 @@ test('cars and chargers were found', async () => {
     // @ts-expect-error
     const resp = await handler(event, {});
     expect(resp.statusCode).toBe(200);
-    expect(resp.body).toBeDefined();
+    expect(resp.body).toBe(Buffer.from(data).toString('base64'));
 });

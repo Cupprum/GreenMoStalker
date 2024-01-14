@@ -11,10 +11,10 @@ import { Position, NetworkingError } from './query/PositionQuery';
 import { GreenMo } from './query/GreenMo';
 import { Spirii } from './query/Spirii';
 
-class ParseError extends Error { }
+class ParseError extends Error {}
 
 export function parsePositions(
-    parameters: APIGatewayProxyEventQueryStringParameters
+    parameters: APIGatewayProxyEventQueryStringParameters,
 ): [Position, Position] {
     const lat1 = parseFloat(parameters['lat1'] as string);
     const lon1 = parseFloat(parameters['lon1'] as string);
@@ -49,7 +49,7 @@ async function generateMapsParameters(
     positions: {
         carPositions: Position[];
         chargerPositions: Position[];
-    }
+    },
 ): Promise<string> {
     const arr: string[] = [];
 
@@ -63,14 +63,14 @@ async function generateMapsParameters(
     pins.push(
         ...positions.carPositions.map(
             // The color is in hex format, the %23 is for hashtag...
-            (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`
-        )
+            (pos) => `lonlat:${pos.lon},${pos.lat};color:%233ea635;size:medium`,
+        ),
     );
     pins.push(
         ...positions.chargerPositions.map(
             // The color is in hex format, the %23 is for hashtag...
-            (pos) => `lonlat:${pos.lon},${pos.lat};color:%23f30e0e;size:medium`
-        )
+            (pos) => `lonlat:${pos.lon},${pos.lat};color:%23f30e0e;size:medium`,
+        ),
     );
     arr.push(`marker=${pins.join('|')}`);
 
@@ -83,7 +83,7 @@ export async function executeMapsRequest(
     positions: {
         carPositions: Position[];
         chargerPositions: Position[];
-    }
+    },
 ): Promise<ArrayBuffer> {
     const protocol = 'https';
     const hostname = 'maps.geoapify.com';
@@ -126,7 +126,7 @@ function messageResponse(statusCode: number, message: string) {
 
 export const handler = async (
     event: APIGatewayEvent,
-    context: Context
+    context: Context,
 ): Promise<APIGatewayProxyResult> => {
     console.log('The lambda function execution start.');
 
@@ -222,12 +222,8 @@ export const handler = async (
 
     let resp: APIGatewayProxyResult;
 
-    if (
-        (chargerPositions && chargerPositions.length == 0) &&
-        carPositions.length == 0
-    ) {
-        let msg = `No available cars${queryChargers ? ' and chargers': ''} were found.`;
-        console.log(msg);
+    if (carPositions.length == 0 && (chargerPositions || []).length == 0) {
+        let msg = 'No available cars and chargers were found.';
         resp = {
             statusCode: 200,
             headers: {
@@ -239,7 +235,9 @@ export const handler = async (
     } else {
         console.log(`Amount of found cars: ${carPositions.length}.`);
         if (queryChargers) {
-            console.log(`Amount of found chargers: ${(chargerPositions || []).length}.`);
+            console.log(
+                `Amount of found chargers: ${(chargerPositions || []).length}.`,
+            );
         }
 
         console.log('Generate map.');
@@ -277,7 +275,6 @@ export const handler = async (
     console.log('The lambda function finished successfully.');
     return resp;
 };
-
 
 // // Used for local development.
 // const event = {
