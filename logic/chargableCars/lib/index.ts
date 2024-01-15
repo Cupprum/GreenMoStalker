@@ -281,7 +281,7 @@ export const handler = async (
         resp = {
             statusCode: 200,
             headers: {
-                'Content-Type': 'image/jpeg',
+                'Content-Type': 'image/png',
                 'Access-Control-Allow-Origin': 'https://editor.swagger.io',
             },
             body: transformedImage,
