@@ -55,8 +55,8 @@ export class GreenMobility extends cdk.Stack {
             };
         };
 
-        const carsEndpoint = api.root.addResource('cars');
-        carsEndpoint.addMethod(
+        const queryEndpoint = api.root.addResource('query');
+        queryEndpoint.addMethod(
             'GET',
             new apigw.LambdaIntegration(chargableCarsLambda),
             {
@@ -65,6 +65,7 @@ export class GreenMobility extends cdk.Stack {
                     'method.request.querystring.lon1': true,
                     'method.request.querystring.lat2': true,
                     'method.request.querystring.lon2': true,
+                    'method.request.querystring.cars': false,
                     'method.request.querystring.chargers': false,
                 },
                 methodResponses: [
@@ -72,7 +73,8 @@ export class GreenMobility extends cdk.Stack {
                         statusCode: '200',
                         responseParameters: {
                             'method.response.header.Content-Type': true,
-                            'method.response.header.Access-Control-Allow-Origin': true,
+                            'method.response.header.Access-Control-Allow-Origin':
+                                true,
                         },
                         responseModels: {
                             'image/png': mapModel,
@@ -87,7 +89,7 @@ export class GreenMobility extends cdk.Stack {
         );
 
         // Enable CORS support for the endpoint.
-        carsEndpoint.addCorsPreflight({
+        queryEndpoint.addCorsPreflight({
             allowOrigins: ['https://editor.swagger.io'],
             allowMethods: ['GET'],
         });

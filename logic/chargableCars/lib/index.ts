@@ -11,6 +11,12 @@ import { Position, NetworkingError } from './query/PositionQuery';
 import { GreenMo } from './query/GreenMo';
 import { Spirii } from './query/Spirii';
 
+type Params = {
+    queryCars: boolean;
+    queryChargers: boolean;
+    desiredFuelLevel: number;
+};
+
 class ParseError extends Error {}
 
 export function parsePositions(
@@ -60,6 +66,7 @@ async function generateMapsParameters(
     arr.push('zoom=14');
 
     let pins: string[] = [];
+    // TODO: change this, this should maybe be iterative?
     pins.push(
         ...positions.carPositions.map(
             // The color is in hex format, the %23 is for hashtag...
@@ -156,37 +163,41 @@ export const handler = async (
     console.log('Positions successfully parsed.');
 
     console.log('Parse rest of the parameters.');
-    const queryChargers = (parameters['chargers'] as string) == 'true';
-    console.log(`chargers: ${queryChargers}`);
-    const desiredFuelLevel = parameters['desiredFuelLevel']
-        ? parseInt(parameters['desiredFuelLevel'])
-        : 40;
-    console.log(`desiredFuelLevel: ${desiredFuelLevel}`);
+    const params: Params = {
+        queryCars: (parameters['cars'] as string) == 'true',
+        queryChargers: (parameters['chargers'] as string) == 'true',
+        desiredFuelLevel: parameters['desiredFuelLevel']
+            ? parseInt(parameters['desiredFuelLevel'])
+            : 40,
+    };
+    console.log(`params: ${params}`);
     console.log('Parameters parsed.');
 
-    console.log('Fetch cars in desired location.');
-    let carPositionsPromise: Promise<Position[]>;
-    try {
-        const greenMoParams = {
-            lon1: `${pos1.lon}`,
-            lat1: `${pos1.lat}`,
-            lon2: `${pos2.lon}`,
-            lat2: `${pos2.lat}`,
-        };
-        const greenMo = new GreenMo(desiredFuelLevel);
-        carPositionsPromise = greenMo.query(greenMoParams);
-    } catch (error) {
-        console.error('Failed fetching cars for charging.');
-        console.log(error);
-        if (error instanceof NetworkingError) {
-            return messageResponse(403, error.message);
-        } else {
-            return messageResponse(500, 'unknown exception');
+    let carPositionsPromise: Promise<Position[]> | undefined;
+    if (params.queryCars) {
+        console.log('Fetch cars in desired location.');
+        try {
+            const greenMoParams = {
+                lon1: `${pos1.lon}`,
+                lat1: `${pos1.lat}`,
+                lon2: `${pos2.lon}`,
+                lat2: `${pos2.lat}`,
+            };
+            const greenMo = new GreenMo(params.desiredFuelLevel);
+            carPositionsPromise = greenMo.query(greenMoParams);
+        } catch (error) {
+            console.error('Failed fetching cars for charging.');
+            console.log(error);
+            if (error instanceof NetworkingError) {
+                return messageResponse(403, error.message);
+            } else {
+                return messageResponse(500, 'unknown exception');
+            }
         }
     }
 
     let chargerPositionsPromise: Promise<Position[]> | undefined;
-    if (queryChargers) {
+    if (params.queryChargers) {
         console.log('Fetch chargers in desired location.');
         try {
             // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
@@ -209,20 +220,22 @@ export const handler = async (
     }
 
     // The GreenMo and Spirii requests are executed asynchronously.
-    let carPositions: Position[] = [];
+    let carPositions: Position[] | undefined;
     let chargerPositions: Position[] | undefined;
-    if (queryChargers) {
-        [carPositions, chargerPositions] = await Promise.all([
-            carPositionsPromise,
-            chargerPositionsPromise,
-        ]);
-    } else {
-        carPositions = await carPositionsPromise;
+
+    if (params.queryCars && carPositionsPromise) {
+        carPositions = (await Promise.all([carPositionsPromise])).at(0);
+    }
+    if (params.queryChargers && chargerPositionsPromise) {
+        chargerPositions = (await Promise.all([chargerPositionsPromise])).at(0);
     }
 
     let resp: APIGatewayProxyResult;
 
-    if (carPositions.length == 0 && (chargerPositions || []).length == 0) {
+    if (
+        (carPositions || []).length == 0 &&
+        (chargerPositions || []).length == 0
+    ) {
         let msg = 'No available cars and chargers were found.';
         resp = {
             statusCode: 200,
@@ -233,8 +246,12 @@ export const handler = async (
             body: JSON.stringify({ message: msg }),
         };
     } else {
-        console.log(`Amount of found cars: ${carPositions.length}.`);
-        if (queryChargers) {
+        if (params.queryCars) {
+            console.log(
+                `Amount of found cars: ${(chargerPositions || []).length}.`,
+            );
+        }
+        if (params.queryChargers) {
             console.log(
                 `Amount of found chargers: ${(chargerPositions || []).length}.`,
             );
@@ -245,7 +262,7 @@ export const handler = async (
         let img: ArrayBuffer;
         try {
             img = await executeMapsRequest(centerPos, {
-                carPositions,
+                carPositions: carPositions || [],
                 chargerPositions: chargerPositions || [],
             });
         } catch (error) {

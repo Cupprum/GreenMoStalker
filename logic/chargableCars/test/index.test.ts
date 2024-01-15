@@ -91,7 +91,8 @@ test('didnt find any cars or chargers', async () => {
             lat1: '2.123456',
             lon2: '3.123456',
             lat2: '4.123456',
-            chargers: true,
+            cars: 'true',
+            chargers: 'true',
         },
     };
 
@@ -114,6 +115,7 @@ test('didnt find any cars but found chargers', async () => {
             lat1: '2.123456',
             lon2: '3.123456',
             lat2: '4.123456',
+            cars: 'true',
             chargers: 'true',
         },
     };
@@ -140,6 +142,7 @@ test('found cars but didnt find chargers', async () => {
             lat1: '2.123456',
             lon2: '3.123456',
             lat2: '4.123456',
+            cars: 'true',
             chargers: 'true',
         },
     };
@@ -166,6 +169,7 @@ test('cars and chargers were found', async () => {
             lat1: '2.123456',
             lon2: '3.123456',
             lat2: '4.123456',
+            cars: 'true',
             chargers: 'true',
         },
     };
