@@ -18,13 +18,19 @@
         }
     ],
     "paths": {
-        "/cars": {
+        "/query": {
             "get": {
                 "parameters": [
                     {
-                        "name": "lon2",
+                        "name": "cars",
                         "in": "query",
-                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "chargers",
+                        "in": "query",
                         "schema": {
                             "type": "string"
                         }
@@ -38,8 +44,9 @@
                         }
                     },
                     {
-                        "name": "chargers",
+                        "name": "lon1",
                         "in": "query",
+                        "required": true,
                         "schema": {
                             "type": "string"
                         }
@@ -53,7 +60,7 @@
                         }
                     },
                     {
-                        "name": "lon1",
+                        "name": "lon2",
                         "in": "query",
                         "required": true,
                         "schema": {
