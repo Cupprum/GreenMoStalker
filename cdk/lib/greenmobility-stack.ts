@@ -6,6 +6,7 @@ import { aws_ssm as ssm } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
+
 export class GreenMobility extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
