@@ -6,7 +6,7 @@
         "axios": "^1.6.7"
     },
     "devDependencies": {
-        "@types/aws-lambda": "^8.10.134",
+        "@types/aws-lambda": "^8.10.137",
         "@types/jest": "^29.5.12",
         "@types/node": "^20.11.30",
         "esbuild": "^0.20.2",
