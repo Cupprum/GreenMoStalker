@@ -11,6 +11,7 @@ on:
       - '.github/workflows/**'
       - 'ci/**'
 
+// TODO: is this even used anywhere?
 env:
   GREENMO_AWS_REGION: ${{ vars.GREENMO_AWS_REGION }}
   GREENMO_AWS_ACCOUNT: ${{ vars.GREENMO_AWS_ACCOUNT }}
