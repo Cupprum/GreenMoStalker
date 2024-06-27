@@ -5,6 +5,6 @@
         "typescript": "^5.2.2"
     },
     "scripts": {
-        "dagger": "dagger run --progress tty node --loader ts-node/esm ./build.mts"
+        "dagger": "dagger run node --loader ts-node/esm ./build.mts"
     }
 }
