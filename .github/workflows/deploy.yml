@@ -26,9 +26,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
-      - name: debugging
-        run: node --version
-        working-directory: ci
       - name: Install Dagger CLI
         run: curl -L https://dl.dagger.io/dagger/install.sh | sh
         working-directory: /usr/local
