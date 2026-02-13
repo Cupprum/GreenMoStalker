@@ -1,6 +1,6 @@
 {
     "devDependencies": {
-        "@dagger.io/dagger": "^0.19.0",
+        "@dagger.io/dagger": "^0.19.11",
         "ts-node": "^10.9.1",
         "typescript": "^5.9.0"
     },
