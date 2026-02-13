@@ -91,7 +91,7 @@ export async function executeMapsRequest(
         carPositions: Position[];
         chargerPositions: Position[];
     },
-): Promise<ArrayBuffer> {
+): Promise<Uint8Array> {
     const protocol = 'https';
     const hostname = 'maps.geoapify.com';
     const endpoint = 'v1/staticmap';
@@ -108,10 +108,10 @@ export async function executeMapsRequest(
         throw new NetworkingError(msg);
     }
 
-    return response.data as ArrayBuffer;
+    return response.data as Uint8Array;
 }
 
-export function transformImage(img: ArrayBuffer): string {
+export function transformImage(img: Uint8Array): string {
     // API gateway behaves like a proxy, the image has to be base64 encoded string with appropriate
     // headers and apigw afterwards translates it to blob.
     return Buffer.from(img).toString('base64');
@@ -259,7 +259,7 @@ export const handler = async (
 
         console.log('Generate map.');
         const centerPos = calculateCenter(pos1, pos2);
-        let img: ArrayBuffer;
+        let img: Uint8Array;
         try {
             img = await executeMapsRequest(centerPos, {
                 carPositions: carPositions || [],
