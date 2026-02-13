@@ -29,7 +29,7 @@ describe('Given the creation of GreenMobility stack', () => {
             test('Should be created', () => {
                 template.hasResourceProperties('AWS::Lambda::Function', {
                     FunctionName: 'chargableCarsLambda',
-                    Runtime: 'nodejs20.x',
+                    Runtime: 'nodejs24.x',
                     Timeout: 15,
                 });
             });
