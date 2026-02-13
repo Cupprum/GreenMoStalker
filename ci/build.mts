@@ -9,7 +9,7 @@ connect(
         const nodeLogicCache = client.cacheVolume("nodeLogicCache");
         const logicSource = client
             .container()
-            .from('node:18-slim')
+            .from('node:24-slim')
             .withDirectory('logic/chargableCars', client.host().directory(logicPath, {
                 exclude: ['node_modules']
             }))
@@ -34,7 +34,7 @@ connect(
         const nodeInfraCache = client.cacheVolume("nodeInfraCache");
         const infraSource = client
             .container()
-            .from('node:18-slim')
+            .from('node:24-slim')
             .withDirectory('cdk', client.host().directory(infraPath, {
                 exclude: ['node_modules'],
             }))
