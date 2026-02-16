@@ -5,7 +5,7 @@ jest.mock('axios');
 test('the location of chargers is fetched', async () => {
     const charger1 = {
         properties: {
-            numOfAvailableConnectors: 2,
+            availableConnectors: 2,
         },
         geometry: {
             coordinates: [2.123456, 1.123456],
@@ -14,7 +14,7 @@ test('the location of chargers is fetched', async () => {
 
     const charger2 = {
         properties: {
-            numOfAvailableConnectors: 0,
+            availableConnectors: 0,
         },
         geometry: {
             coordinates: [3.123456, 4.123456],
