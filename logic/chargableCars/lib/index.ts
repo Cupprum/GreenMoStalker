@@ -202,13 +202,13 @@ export const handler = async (
         try {
             // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
             const spiriiParams = {
-                includeOccupied: 'true',
-                includeOutOfService: 'true',
-                includeRoaming: 'true',
-                onlyIncludeFavourite: 'false',
-                neCoordinates: `${pos1.lat}0000%2C${pos2.lon}0000`,
-                swCoordinates: `${pos2.lat}0000%2C${pos1.lon}0000`,
-                zoom: '22',
+                includeOccupied: true,
+                includeOutOfService: true,
+                includeRoaming: true,
+                onlyIncludeFavourite: false,
+                neCoordinates: `${pos1.lat}0000, ${pos2.lon}0000`,
+                swCoordinates: `${pos2.lat}0000, ${pos1.lon}0000`,
+                zoom: 22,
             };
             const spirii = new Spirii();
             chargerPositionsPromise = spirii.query(spiriiParams);

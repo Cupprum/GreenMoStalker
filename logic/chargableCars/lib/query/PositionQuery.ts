@@ -13,7 +13,7 @@ export abstract class PositionQuery<Type> {
     endpoint!: string;
     headers: { [header: string]: string } = {};
 
-    protected async request(params: { [param: string]: string }): Promise<any> {
+    protected async request(params: { [param: any]: string }): Promise<any> {
         const url = `${this.protocol}://${this.hostname}/${this.endpoint}`;
 
         console.log(`Execute HTTP request against: ${url}.`);
@@ -40,7 +40,7 @@ export abstract class PositionQuery<Type> {
     }
 
     public async query(params: {
-        [param: string]: string;
+        [param: string]: any;
     }): Promise<Position[]> {
         const response = await this.request(params);
         const filtered = this.filter(response);
