@@ -202,9 +202,9 @@ export const handler = async (
         try {
             // Zoom of 22, so that on map, it shows detailed chargers and not just clusters.
             const spiriiParams = {
-                includeOccupied: 'false',
-                includeOutOfService: 'false',
-                includeRoaming: 'false',
+                includeOccupied: 'true',
+                includeOutOfService: 'true',
+                includeRoaming: 'true',
                 neCoordinates: `${pos1.lat},${pos2.lon}`,
                 swCoordinates: `${pos2.lat},${pos1.lon}`,
                 zoom: '22',
