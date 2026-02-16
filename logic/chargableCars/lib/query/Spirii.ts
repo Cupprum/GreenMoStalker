@@ -13,9 +13,9 @@ interface Charger {
 export class Spirii extends PositionQuery<Charger> {
     protocol = 'https';
     hostname = 'app.spirii.dk';
-    endpoint = 'api/clusters';
+    endpoint = 'api/v2/clusters';
     headers = {
-        appversion: '3.6.1',
+        appversion: '3.12.1',
     };
 
     protected filter(objs: Charger[]): Charger[] {
