@@ -251,7 +251,7 @@ export const handler = async (
     } else {
         if (params.queryCars) {
             console.log(
-                `Amount of found cars: ${(chargerPositions || []).length}.`,
+                `Amount of found cars: ${(carPositions || []).length}.`,
             );
         }
         if (params.queryChargers) {
