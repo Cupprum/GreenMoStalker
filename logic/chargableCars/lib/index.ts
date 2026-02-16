@@ -206,8 +206,8 @@ export const handler = async (
                 includeOutOfService: true,
                 includeRoaming: true,
                 onlyIncludeFavourite: false,
-                neCoordinates: `${pos1.lat}0000, ${pos2.lon}0000`,
-                swCoordinates: `${pos2.lat}0000, ${pos1.lon}0000`,
+                neCoordinates: `${pos1.lat}, ${pos2.lon}`,
+                swCoordinates: `${pos2.lat}, ${pos1.lon}`,
                 zoom: 22,
             };
             const spirii = new Spirii();
