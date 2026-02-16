@@ -3,7 +3,7 @@ import { PositionQuery, Position } from './PositionQuery';
 interface Charger {
     properties: {
         id: string;
-        numOfAvailableConnectors: number;
+        availableConnectors: number;
     };
     geometry: {
         coordinates: [number, number];
@@ -21,7 +21,7 @@ export class Spirii extends PositionQuery<Charger> {
     protected filter(objs: Charger[]): Charger[] {
         return objs.filter(
             (charger: Charger) =>
-                charger.properties.numOfAvailableConnectors > 0
+                charger.properties.availableConnectors > 0
         );
     }
 
