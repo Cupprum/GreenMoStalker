@@ -29,12 +29,13 @@ test('the location of chargers is fetched', async () => {
     const pos1 = { lat: 1.123456, lon: 2.123456 };
     const pos2 = { lat: 3.123456, lon: 4.123456 };
     const params = {
-        includeOccupied: false,
-        includeOutOfService: false,
-        includeRoaming: false,
+        includeOccupied: true,
+        includeOutOfService: true,
+        includeRoaming: true,
+        onlyIncludeFavourite: false,
         neCoordinates: `${pos1.lat},${pos2.lon}`,
         swCoordinates: `${pos2.lat},${pos1.lon}`,
-        zoom: 22,
+        zoomLevel: 22,
     };
 
     const spirii = new Spirii();

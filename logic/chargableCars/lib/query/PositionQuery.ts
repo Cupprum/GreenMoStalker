@@ -13,7 +13,7 @@ export abstract class PositionQuery<Type> {
     endpoint!: string;
     headers: { [header: string]: string } = {};
 
-    protected async request(params: { [param: any]: string }): Promise<any> {
+    protected async request(params: any): Promise<any> {
         const url = `${this.protocol}://${this.hostname}/${this.endpoint}`;
 
         console.log(`Execute HTTP request against: ${url}.`);
@@ -39,9 +39,7 @@ export abstract class PositionQuery<Type> {
         throw new Error('Method not implemented.');
     }
 
-    public async query(params: {
-        [param: string]: any;
-    }): Promise<Position[]> {
+    public async query(params: any): Promise<Position[]> {
         const response = await this.request(params);
         const filtered = this.filter(response);
         const mapped = this.map(filtered);

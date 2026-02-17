@@ -208,7 +208,7 @@ export const handler = async (
                 onlyIncludeFavourite: false,
                 neCoordinates: `${pos1.lat}, ${pos2.lon}`,
                 swCoordinates: `${pos2.lat}, ${pos1.lon}`,
-                zoom: 22,
+                zoomLevel: 22,
             };
             const spirii = new Spirii();
             chargerPositionsPromise = spirii.query(spiriiParams);
